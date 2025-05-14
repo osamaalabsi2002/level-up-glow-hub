@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
@@ -82,7 +81,7 @@ const StylistDashboard = () => {
       // Get current date to separate upcoming and past appointments
       const today = new Date().toISOString().split('T')[0];
       
-      // Fetch bookings with client profiles and service details
+      // Fetch bookings with client profiles
       const { data, error } = await supabase
         .from('bookings')
         .select(`
@@ -91,30 +90,39 @@ const StylistDashboard = () => {
           time,
           status,
           client_id,
-          client_name,
-          client_email,
-          client_phone,
-          services:service_id (name),
+          service_id,
           profiles:client_id (full_name, email, phone)
         `)
         .eq('stylist_id', stylistId);
       
       if (error) throw error;
       
+      // Now fetch service names in a separate query
+      const { data: servicesData } = await supabase
+        .from('services')
+        .select('id, name');
+      
+      const servicesMap: Record<number, string> = {};
+      if (servicesData) {
+        servicesData.forEach((service: { id: number; name: string }) => {
+          servicesMap[service.id] = service.name;
+        });
+      }
+      
       if (data) {
         // Process and separate the bookings
         const upcoming: Appointment[] = [];
         const past: Appointment[] = [];
         
-        data.forEach(booking => {
+        data.forEach((booking: any) => {
           const appointmentData: Appointment = {
             id: booking.id,
-            clientName: booking.profiles?.full_name || booking.client_name || 'Guest',
+            clientName: booking.profiles?.full_name || 'Guest',
             date: booking.date,
             time: booking.time,
-            service: booking.services?.name || 'Not specified',
-            clientPhone: booking.profiles?.phone || booking.client_phone,
-            clientEmail: booking.profiles?.email || booking.client_email,
+            service: servicesMap[booking.service_id] || 'Not specified',
+            clientPhone: booking.profiles?.phone,
+            clientEmail: booking.profiles?.email,
             status: booking.status as any
           };
           
@@ -241,7 +249,7 @@ const StylistDashboard = () => {
       <div className="flex-grow py-10 bg-gray-50">
         <div className="container mx-auto px-4">
           <header className="mb-8">
-            <h1 className="text-3xl font-serif font-bold text-salon-green mb-2">لوحة تحكم المصمم</h1>
+            <h1 className="text-3xl font-serif font-bold text-salon-green mb-2">لو��ة تحكم المصمم</h1>
             <p className="text-gray-600">
               مرحبًا{profile?.full_name ? `, ${profile.full_name}` : ''}! {' '}
               {!loading && upcomingAppointments.length > 0 ? 

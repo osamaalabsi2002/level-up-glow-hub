@@ -9,36 +9,278 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      available_times: {
+        Row: {
+          created_at: string | null
+          day_of_week: number
+          end_time: string
+          id: number
+          is_available: boolean | null
+          start_time: string
+          stylist_id: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          day_of_week: number
+          end_time: string
+          id?: number
+          is_available?: boolean | null
+          start_time: string
+          stylist_id?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          day_of_week?: number
+          end_time?: string
+          id?: number
+          is_available?: boolean | null
+          start_time?: string
+          stylist_id?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "available_times_stylist_id_fkey"
+            columns: ["stylist_id"]
+            isOneToOne: false
+            referencedRelation: "stylists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      blog_categories: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: number
+          name: string
+          slug: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: number
+          name: string
+          slug: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: number
+          name?: string
+          slug?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      blog_comments: {
+        Row: {
+          content: string
+          created_at: string | null
+          id: number
+          is_approved: boolean | null
+          post_id: number | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          id?: number
+          is_approved?: boolean | null
+          post_id?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          id?: number
+          is_approved?: boolean | null
+          post_id?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blog_comments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "blog_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blog_comments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      blog_post_tags: {
+        Row: {
+          post_id: number
+          tag_id: number
+        }
+        Insert: {
+          post_id: number
+          tag_id: number
+        }
+        Update: {
+          post_id?: number
+          tag_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blog_post_tags_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "blog_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blog_post_tags_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "blog_tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      blog_posts: {
+        Row: {
+          author_id: string | null
+          category_id: number | null
+          content: string
+          created_at: string | null
+          excerpt: string | null
+          id: number
+          image_url: string | null
+          published: boolean | null
+          read_time: number | null
+          slug: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          author_id?: string | null
+          category_id?: number | null
+          content: string
+          created_at?: string | null
+          excerpt?: string | null
+          id?: number
+          image_url?: string | null
+          published?: boolean | null
+          read_time?: number | null
+          slug: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          author_id?: string | null
+          category_id?: number | null
+          content?: string
+          created_at?: string | null
+          excerpt?: string | null
+          id?: number
+          image_url?: string | null
+          published?: boolean | null
+          read_time?: number | null
+          slug?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blog_posts_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_blog_post_category"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "blog_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      blog_tags: {
+        Row: {
+          created_at: string | null
+          id: number
+          name: string
+          slug: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: number
+          name: string
+          slug: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: number
+          name?: string
+          slug?: string
+        }
+        Relationships: []
+      }
       bookings: {
         Row: {
+          client_email: string | null
           client_id: string | null
+          client_name: string | null
+          client_phone: string | null
           created_at: string | null
           date: string
+          duration: number | null
           id: number
+          notes: string | null
+          price: number | null
           service_id: number | null
-          status: string | null
+          status: Database["public"]["Enums"]["booking_status"] | null
           stylist_id: number | null
           time: string
           updated_at: string | null
         }
         Insert: {
+          client_email?: string | null
           client_id?: string | null
+          client_name?: string | null
+          client_phone?: string | null
           created_at?: string | null
           date: string
+          duration?: number | null
           id?: number
+          notes?: string | null
+          price?: number | null
           service_id?: number | null
-          status?: string | null
+          status?: Database["public"]["Enums"]["booking_status"] | null
           stylist_id?: number | null
           time: string
           updated_at?: string | null
         }
         Update: {
+          client_email?: string | null
           client_id?: string | null
+          client_name?: string | null
+          client_phone?: string | null
           created_at?: string | null
           date?: string
+          duration?: number | null
           id?: number
+          notes?: string | null
+          price?: number | null
           service_id?: number | null
-          status?: string | null
+          status?: Database["public"]["Enums"]["booking_status"] | null
           stylist_id?: number | null
           time?: string
           updated_at?: string | null
@@ -59,6 +301,72 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      orders: {
+        Row: {
+          created_at: string | null
+          id: number
+          product_id: number
+          quantity: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: number
+          product_id: number
+          quantity?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: number
+          product_id?: number
+          quantity?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      products: {
+        Row: {
+          created_at: string | null
+          id: number
+          image_url: string
+          name: string
+          price: number
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: number
+          image_url: string
+          name: string
+          price: number
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: number
+          image_url?: string
+          name?: string
+          price?: number
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -96,6 +404,7 @@ export type Database = {
           description: string | null
           duration: number
           id: number
+          image_url: string | null
           name: string
           price: number
           updated_at: string
@@ -105,6 +414,7 @@ export type Database = {
           description?: string | null
           duration: number
           id?: number
+          image_url?: string | null
           name: string
           price: number
           updated_at?: string
@@ -114,54 +424,178 @@ export type Database = {
           description?: string | null
           duration?: number
           id?: number
+          image_url?: string | null
           name?: string
           price?: number
           updated_at?: string
         }
         Relationships: []
       }
+      stylist_notifications: {
+        Row: {
+          created_at: string | null
+          id: number
+          is_read: boolean | null
+          message: string
+          related_id: number | null
+          stylist_id: number | null
+          title: string
+          type: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: number
+          is_read?: boolean | null
+          message: string
+          related_id?: number | null
+          stylist_id?: number | null
+          title: string
+          type: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: number
+          is_read?: boolean | null
+          message?: string
+          related_id?: number | null
+          stylist_id?: number | null
+          title?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stylist_notifications_stylist_id_fkey"
+            columns: ["stylist_id"]
+            isOneToOne: false
+            referencedRelation: "stylists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stylist_reviews: {
+        Row: {
+          booking_id: number | null
+          client_id: string | null
+          comment: string | null
+          created_at: string | null
+          id: number
+          is_featured: boolean | null
+          is_verified: boolean | null
+          rating: number
+          stylist_id: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          booking_id?: number | null
+          client_id?: string | null
+          comment?: string | null
+          created_at?: string | null
+          id?: number
+          is_featured?: boolean | null
+          is_verified?: boolean | null
+          rating: number
+          stylist_id?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          booking_id?: number | null
+          client_id?: string | null
+          comment?: string | null
+          created_at?: string | null
+          id?: number
+          is_featured?: boolean | null
+          is_verified?: boolean | null
+          rating?: number
+          stylist_id?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stylist_reviews_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stylist_reviews_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stylist_reviews_stylist_id_fkey"
+            columns: ["stylist_id"]
+            isOneToOne: false
+            referencedRelation: "stylists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stylists: {
         Row: {
           available: boolean
           bio: string | null
+          certifications: string[] | null
           created_at: string
+          date_hired: string | null
+          email: string | null
           experience: number
+          featured: boolean | null
           id: number
           image: string
           name: string
+          phone: string | null
           rating: number
           reviews: number
           role: string
           specialties: string[]
           updated_at: string
+          user_id: string | null
+          work_hours: Json | null
         }
         Insert: {
           available?: boolean
           bio?: string | null
+          certifications?: string[] | null
           created_at?: string
+          date_hired?: string | null
+          email?: string | null
           experience?: number
+          featured?: boolean | null
           id?: number
           image: string
           name: string
+          phone?: string | null
           rating?: number
           reviews?: number
           role: string
           specialties?: string[]
           updated_at?: string
+          user_id?: string | null
+          work_hours?: Json | null
         }
         Update: {
           available?: boolean
           bio?: string | null
+          certifications?: string[] | null
           created_at?: string
+          date_hired?: string | null
+          email?: string | null
           experience?: number
+          featured?: boolean | null
           id?: number
           image?: string
           name?: string
+          phone?: string | null
           rating?: number
           reviews?: number
           role?: string
           specialties?: string[]
           updated_at?: string
+          user_id?: string | null
+          work_hours?: Json | null
         }
         Relationships: []
       }
@@ -170,10 +604,31 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      check_stylist_availability: {
+        Args: {
+          p_stylist_id: number
+          p_date: string
+          p_time: string
+          p_duration?: number
+        }
+        Returns: boolean
+      }
+      generate_slug: {
+        Args: { title: string }
+        Returns: string
+      }
+      is_booking_slot_available: {
+        Args: {
+          p_stylist_id: number
+          p_date: string
+          p_time: string
+          p_duration: number
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      booking_status: "pending" | "confirmed" | "completed" | "canceled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -288,6 +743,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      booking_status: ["pending", "confirmed", "completed", "canceled"],
+    },
   },
 } as const

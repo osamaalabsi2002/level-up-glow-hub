@@ -1,36 +1,43 @@
 
-import { useLocation } from "react-router-dom";
-import { useEffect } from "react";
+import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft, Home } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
-import { Button } from "@/components/ui/button";
-import { Home } from "lucide-react";
 
 const NotFound = () => {
-  const location = useLocation();
-
-  useEffect(() => {
-    console.error(
-      "404 Error: User attempted to access non-existent route:",
-      location.pathname
-    );
-  }, [location.pathname]);
-
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
-      <div className="flex-1 flex items-center justify-center bg-gray-50 py-20">
-        <div className="text-center px-4">
-          <h1 className="text-6xl md:text-8xl font-bold text-salon-green mb-4">404</h1>
-          <div className="w-24 h-1 bg-gold mx-auto mb-6"></div>
-          <p className="text-2xl md:text-3xl text-gray-700 mb-6 font-serif">Page Not Found</p>
-          <p className="text-gray-600 max-w-md mx-auto mb-8">
-            The page you're looking for doesn't exist or has been moved. 
-            Let's get you back to our beautiful salon.
+      <div className="flex-grow pt-20 pb-16 flex items-center justify-center">
+        <div className="container max-w-lg mx-auto px-4 text-center">
+          <h1 className="text-8xl font-bold text-salon-green mb-6">404</h1>
+          <h2 className="text-2xl font-medium text-gray-700 mb-6">Page Not Found</h2>
+          <p className="text-gray-600 mb-8">
+            The page you're looking for doesn't exist or has been moved.
           </p>
-          <Button className="bg-salon-green hover:bg-salon-darkGreen text-white">
-            <Home className="mr-2 h-5 w-5" /> Return to Homepage
-          </Button>
+          
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Button 
+              variant="outline" 
+              size="lg"
+              onClick={() => window.history.back()}
+              className="w-full sm:w-auto"
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Go Back
+            </Button>
+            <Button 
+              className="bg-salon-green hover:bg-salon-darkGreen text-white w-full sm:w-auto"
+              size="lg"
+              asChild
+            >
+              <Link to="/">
+                <Home className="mr-2 h-4 w-4" />
+                Return Home
+              </Link>
+            </Button>
+          </div>
         </div>
       </div>
       <Footer />

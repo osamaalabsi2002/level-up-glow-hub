@@ -1,10 +1,13 @@
+
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, ShoppingCart, Calendar, LayoutDashboard, LogOut, User } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import BookingModal from "@/components/BookingModal";
 import AuthModal from "@/components/AuthModal";
+import CartDialog from "@/components/CartDialog";
 import { useAuth } from '@/context/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,6 +25,8 @@ const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
   const [bookingModalOpen, setBookingModalOpen] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [cartOpen, setCartOpen] = useState(false);
+  const [cartItemCount, setCartItemCount] = useState(0);
   const location = useLocation();
   const { user, profile, signOut } = useAuth();
 
@@ -36,6 +41,33 @@ const Navbar = () => {
   useEffect(() => {
     setIsMenuOpen(false);
   }, [location.pathname]);
+
+  // Fetch cart item count for logged in user
+  useEffect(() => {
+    if (user) {
+      fetchCartItemCount();
+    } else {
+      setCartItemCount(0);
+    }
+  }, [user]);
+
+  const fetchCartItemCount = async () => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('orders')
+        .select('quantity')
+        .eq('user_id', user.id);
+      
+      if (error) throw error;
+      
+      const count = data.reduce((total, item) => total + item.quantity, 0);
+      setCartItemCount(count);
+    } catch (error) {
+      console.error('Error fetching cart count:', error);
+    }
+  };
 
   const navLinks = [
     { name: 'Home', path: '/' },
@@ -88,8 +120,20 @@ const Navbar = () => {
           <Button variant="outline" size="sm" className="border-gold text-salon-green" onClick={() => setBookingModalOpen(true)}>
             <Calendar className="mr-1 h-4 w-4" /> Book Now
           </Button>
-          <Button variant="ghost" size="icon" className="text-salon-green">
+          
+          {/* Cart Button with Counter */}
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="text-salon-green relative"
+            onClick={() => setCartOpen(true)}
+          >
             <ShoppingCart className="h-5 w-5" />
+            {cartItemCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                {cartItemCount}
+              </span>
+            )}
           </Button>
 
           {user ? (
@@ -168,6 +212,19 @@ const Navbar = () => {
                 </Link>
               ))}
 
+              <div className="flex items-center justify-between py-2">
+                <span className="text-salon-green">Your Cart</span>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="flex items-center text-salon-green"
+                  onClick={() => { setCartOpen(true); setIsMenuOpen(false); }}
+                >
+                  <ShoppingCart className="h-4 w-4 mr-1" />
+                  View Cart {cartItemCount > 0 && `(${cartItemCount})`}
+                </Button>
+              </div>
+
               {user ? (
                 <>
                   <Link to="/profile" className="text-salon-green py-2 hover:text-gold flex items-center">
@@ -185,19 +242,20 @@ const Navbar = () => {
                   <User className="mr-2 h-4 w-4" /> Login / Register
                 </Button>
               )}
-                {profile?.role !== 'admin' && (
+              {profile?.role !== 'admin' && (
                 <Button variant="outline" className="border-gold text-salon-green w-full" onClick={() => { setBookingModalOpen(true); setIsMenuOpen(false); }}>
                   <Calendar className="mr-2 h-4 w-4" /> Book Appointment
                 </Button>
-                )}
-              </div>
-              </div>
+              )}
             </div>
-            )}
+          </div>
+        </div>
+      )}
 
-            {/* Modals */}
+      {/* Modals */}
       <BookingModal isOpen={bookingModalOpen} onClose={() => setBookingModalOpen(false)} />
       <AuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} />
+      <CartDialog isOpen={cartOpen} onClose={() => setCartOpen(false)} />
     </header>
   );
 };
