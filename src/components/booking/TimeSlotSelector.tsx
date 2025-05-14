@@ -96,6 +96,16 @@ const TimeSlotSelector = ({ form, selectedDate, stylistId }: TimeSlotSelectorPro
       
       setTimeSlots(availableTimeSlots);
       setNoAvailableTimes(availableTimeSlots.length === 0);
+      
+      // If there are available slots but the currently selected time is not available, reset it
+      if (availableTimeSlots.length > 0 && form.getValues("time")) {
+        const currentTime = form.getValues("time");
+        const isCurrentTimeAvailable = availableTimeSlots.some(slot => slot.value === currentTime);
+        
+        if (!isCurrentTimeAvailable) {
+          form.setValue("time", "");
+        }
+      }
     } catch (error) {
       console.error('Error checking time slots:', error);
       toast({
