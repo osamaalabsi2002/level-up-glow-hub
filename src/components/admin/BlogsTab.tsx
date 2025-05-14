@@ -22,8 +22,11 @@ const BlogsTab = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedPost, setSelectedPost] = useState<BlogPost | undefined>(undefined);
   
-  const { data: posts = [], isLoading } = useBlogPosts();
+  const { data: blogData, isLoading } = useBlogPosts();
   const { deletePost } = useBlogOperations();
+
+  // Extract posts from the returned data
+  const posts = blogData?.posts || [];
 
   const handleCreatePost = () => {
     setSelectedPost(undefined);
