@@ -6,43 +6,62 @@ export interface Booking {
   date: string;
   time: string;
   service: string;
-  status: "confirmed" | "pending" | "completed" | "canceled";
-  clientEmail?: string;
-  clientPhone?: string;
-  stylistId?: number;
-  serviceId?: number;
-  clientId?: string;
+  status: "pending" | "confirmed" | "canceled" | "completed";
 }
 
 export interface Service {
   id: number;
   name: string;
-  description: string;
-  price: number;
+  description?: string;
   duration: number;
+  price: number;
+  image_url?: string;
 }
 
 export interface Stylist {
   id: number;
   name: string;
   role: string;
+  image: string;
+  bio: string;
+  available: boolean;
   rating: number;
   reviews: number;
   specialties: string[];
-  image: string;
-  bio?: string;
-  available?: boolean;
-  experience?: number;
-  services?: { name: string; price: number }[];
-  clientReviews?: { id: number; name: string; rating: number; date: string; text: string }[];
-  userId?: string;
+  experience: number;
+  services: Service[];
+  clientReviews: any[];
+  user_id?: string; // Link to the auth.users table
 }
 
-export interface User {
-  id: string;
-  email?: string;
-  full_name?: string;
-  avatar_url?: string;
-  role: string;
-  phone?: string;
+export interface StatsData {
+  bookingsCount: number;
+  todayBookingsCount: number;
+  stylistsCount: number;
+  averageRating: number;
+}
+
+export interface Review {
+  id: number;
+  clientName: string;
+  rating: number;
+  comment: string;
+  date: string;
+  isVerified: boolean;
+}
+
+export interface Product {
+  id: number;
+  name: string;
+  price: number;
+  image_url: string;
+  description?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface CartItem {
+  id: number;
+  product: Product;
+  quantity: number;
 }

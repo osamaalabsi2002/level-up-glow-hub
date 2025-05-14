@@ -63,18 +63,25 @@ const StylistsTab = ({ stylists, onAddStaff, onEditStaff }: StylistsTabProps) =>
   const handleAddStylist = async (stylist: Partial<Stylist>) => {
     try {
       setIsLoading(true);
+      
+      // Extract user_id if it's present and then remove it from the main data object
+      const user_id = stylist.user_id || null;
+      const { user_id: _, ...stylistData } = stylist;
+
+      // Insert into stylists table
       const { data, error } = await supabase
         .from('stylists')
         .insert({
-          name: stylist.name || "",
-          role: stylist.role || "",
-          image: stylist.image || "",
-          bio: stylist.bio || "",
-          specialties: stylist.specialties || [],
-          rating: stylist.rating || 5.0,
-          reviews: stylist.reviews || 0,
-          available: stylist.available !== undefined ? stylist.available : true,
-          experience: stylist.experience || 1
+          name: stylistData.name || "",
+          role: stylistData.role || "",
+          image: stylistData.image || "",
+          bio: stylistData.bio || "",
+          specialties: stylistData.specialties || [],
+          rating: stylistData.rating || 5.0,
+          reviews: stylistData.reviews || 0,
+          available: stylistData.available !== undefined ? stylistData.available : true,
+          experience: stylistData.experience || 1,
+          user_id: user_id // Link to user if provided
         })
         .select();
       
@@ -97,14 +104,21 @@ const StylistsTab = ({ stylists, onAddStaff, onEditStaff }: StylistsTabProps) =>
           available: data[0].available,
           experience: data[0].experience,
           services: [],
-          clientReviews: []
+          clientReviews: [],
+          user_id: data[0].user_id
         };
         
         // Add the new stylist to state
         setLocalStylists([...localStylists, newStylist]);
         onAddStaff(newStylist);
         setIsAddModalOpen(false);
-        toast.success("تمت إضافة المصمم بنجاح");
+        
+        // Show success message based on whether a user was associated
+        if (user_id) {
+          toast.success("تمت إضافة المصمم وتحديث دور المستخدم بنجاح");
+        } else {
+          toast.success("تمت إضافة المصمم بنجاح");
+        }
       }
     } catch (error: any) {
       console.error("Error adding stylist:", error);
@@ -197,6 +211,13 @@ const StylistsTab = ({ stylists, onAddStaff, onEditStaff }: StylistsTabProps) =>
                     </Badge>
                   )}
                 </div>
+                
+                {/* Show if the stylist is linked to a user account */}
+                {stylist.user_id && (
+                  <Badge className="bg-blue-100 text-blue-800 mb-3">
+                    Linked to User Account
+                  </Badge>
+                )}
                 
                 <div className="flex justify-end space-x-2 rtl:space-x-reverse mt-3">
                   <Button 

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
@@ -33,10 +34,15 @@ const StylistDashboard = () => {
   const navigate = useNavigate();
   
   useEffect(() => {
-    // Redirect if not stylist
-    if (profile && profile.role !== 'stylist' && profile.role !== 'admin') {
-      toast.error("You don't have permission to access this page");
-      navigate('/');
+    // Enhanced authorization check to include both stylist and admin roles
+    if (profile) {
+      if (profile.role !== 'stylist' && profile.role !== 'admin') {
+        toast.error("You don't have permission to access this page");
+        navigate('/');
+        return;
+      }
+    } else {
+      // If profile is not loaded yet, we'll redirect once it loads
       return;
     }
 
@@ -57,6 +63,11 @@ const StylistDashboard = () => {
         
         if (data) {
           setStylistId(data.id);
+        } else {
+          // If the user is an admin but not a stylist, we'll show a message
+          if (profile.role === 'admin') {
+            toast.info("You're logged in as an admin, but not associated with a stylist profile");
+          }
         }
       } catch (error) {
         console.error('Error fetching stylist ID:', error);
@@ -249,7 +260,7 @@ const StylistDashboard = () => {
       <div className="flex-grow py-10 bg-gray-50">
         <div className="container mx-auto px-4">
           <header className="mb-8">
-            <h1 className="text-3xl font-serif font-bold text-salon-green mb-2">لو��ة تحكم المصمم</h1>
+            <h1 className="text-3xl font-serif font-bold text-salon-green mb-2">لوحة تحكم المصمم</h1>
             <p className="text-gray-600">
               مرحبًا{profile?.full_name ? `, ${profile.full_name}` : ''}! {' '}
               {!loading && upcomingAppointments.length > 0 ? 

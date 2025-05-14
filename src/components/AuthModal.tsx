@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import {
   Dialog,
@@ -121,8 +122,11 @@ const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
       onClose();
       loginForm.reset();
 
+      // Redirect based on user role
       if (profileData.role === "admin") {
         navigate("/admin-dashboard");
+      } else if (profileData.role === "stylist") {
+        navigate("/stylist-dashboard");
       } else {
         navigate("/");
       }

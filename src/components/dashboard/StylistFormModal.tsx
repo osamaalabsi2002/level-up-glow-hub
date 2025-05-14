@@ -1,12 +1,39 @@
 
-import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { useState, useEffect } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormDescription,
+  FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
 import { Stylist } from "@/types/dashboard";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface StylistFormModalProps {
   isOpen: boolean;
@@ -15,147 +42,350 @@ interface StylistFormModalProps {
   editStylist?: Stylist;
 }
 
+// Zod schema for form validation
+const stylistFormSchema = z.object({
+  name: z.string().min(2, { message: "Name must be at least 2 characters" }),
+  role: z.string().min(2, { message: "Role is required" }),
+  image: z.string().url({ message: "Please enter a valid image URL" }),
+  bio: z.string().optional(),
+  specialties: z.array(z.string()).min(1, { message: "At least one specialty is required" }),
+  rating: z.number().min(1).max(5),
+  available: z.boolean(),
+  experience: z.number().min(1).max(30),
+  user_id: z.string().optional(),
+});
+
+type StylistFormValues = z.infer<typeof stylistFormSchema>;
+
 const StylistFormModal = ({ isOpen, onClose, onSave, editStylist }: StylistFormModalProps) => {
-  const [name, setName] = useState(editStylist?.name || "");
-  const [role, setRole] = useState(editStylist?.role || "");
-  const [bio, setBio] = useState(editStylist?.bio || "");
-  const [image, setImage] = useState(editStylist?.image || "https://images.unsplash.com/photo-1580618672591-eb180b1a973f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8aGFpcmRyZXNzZXJ8ZW58MHx8MHx8fDA%3D&auto=format&fit=crop&w=500&q=60");
-  const [specialties, setSpecialties] = useState(editStylist?.specialties.join(", ") || "");
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [existingUsers, setExistingUsers] = useState<Array<{ id: string; email: string }>>([]);
+  const [specialtyInput, setSpecialtyInput] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  const validateForm = () => {
-    const newErrors: Record<string, string> = {};
-    
-    if (!name.trim()) newErrors.name = "اسم المصمم مطلوب";
-    if (!role.trim()) newErrors.role = "دور المصمم مطلوب";
-    if (!image.trim()) newErrors.image = "صورة المصمم مطلوبة";
-    if (!specialties.trim()) newErrors.specialties = "تخصصات المصمم مطلوبة";
-    
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+  // Initialize the form with default values or edit values
+  const form = useForm<StylistFormValues>({
+    resolver: zodResolver(stylistFormSchema),
+    defaultValues: editStylist ? {
+      name: editStylist.name,
+      role: editStylist.role,
+      image: editStylist.image,
+      bio: editStylist.bio || "",
+      specialties: editStylist.specialties || [],
+      rating: editStylist.rating,
+      available: editStylist.available,
+      experience: editStylist.experience,
+      user_id: undefined,
+    } : {
+      name: "",
+      role: "مصففة شعر",
+      image: "https://source.unsplash.com/random/300x300/?hairstylist",
+      bio: "",
+      specialties: [],
+      rating: 5.0,
+      available: true,
+      experience: 1,
+      user_id: undefined,
+    },
+  });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!validateForm()) return;
-    
-    const stylistData: Partial<Stylist> = {
-      name,
-      role,
-      image,
-      bio: bio || undefined,
-      specialties: specialties.split(",").map(item => item.trim()),
-      rating: editStylist?.rating || 5.0,
-      reviews: editStylist?.reviews || 0,
-      available: editStylist?.available !== undefined ? editStylist.available : true,
-      experience: editStylist?.experience || 1,
+  useEffect(() => {
+    // Fetch users for the dropdown
+    const fetchUsers = async () => {
+      try {
+        setIsLoading(true);
+        // Fetch profiles that don't already have a stylist entry
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('id, email:full_name')
+          .neq('role', 'stylist')
+          .order('full_name', { ascending: true });
+        
+        if (error) throw error;
+        
+        if (data) {
+          setExistingUsers(data);
+        }
+      } catch (error) {
+        console.error('Error fetching users:', error);
+        toast.error('Could not load available users');
+      } finally {
+        setIsLoading(false);
+      }
     };
-    
-    if (editStylist) {
-      stylistData.id = editStylist.id;
+
+    if (isOpen) {
+      fetchUsers();
     }
-    
-    onSave(stylistData);
-    onClose();
-    toast.success(editStylist ? "تم تحديث بيانات المصمم بنجاح" : "تمت إضافة المصمم بنجاح");
+  }, [isOpen]);
+
+  // Handle form submission
+  const onSubmit = async (values: StylistFormValues) => {
+    try {
+      onSave(values);
+      form.reset();
+      onClose();
+    } catch (error) {
+      console.error("Form submission error:", error);
+    }
   };
 
-  const resetForm = () => {
-    if (editStylist) {
-      setName(editStylist.name);
-      setRole(editStylist.role);
-      setBio(editStylist.bio || "");
-      setImage(editStylist.image);
-      setSpecialties(editStylist.specialties.join(", "));
-    } else {
-      setName("");
-      setRole("");
-      setBio("");
-      setImage("https://images.unsplash.com/photo-1580618672591-eb180b1a973f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8aGFpcmRyZXNzZXJ8ZW58MHx8MHx8fDA%3D&auto=format&fit=crop&w=500&q=60");
-      setSpecialties("");
+  // Handle adding a specialty
+  const handleAddSpecialty = () => {
+    if (specialtyInput.trim() !== "") {
+      const currentSpecialties = form.getValues("specialties") || [];
+      
+      // Check if the specialty already exists
+      if (!currentSpecialties.includes(specialtyInput)) {
+        form.setValue("specialties", [...currentSpecialties, specialtyInput]);
+        setSpecialtyInput("");
+      } else {
+        toast.error("This specialty is already added");
+      }
     }
-    setErrors({});
+  };
+
+  // Handle removing a specialty
+  const handleRemoveSpecialty = (specialty: string) => {
+    const currentSpecialties = form.getValues("specialties");
+    form.setValue(
+      "specialties",
+      currentSpecialties.filter((s) => s !== specialty)
+    );
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => {
-      if (!open) {
-        onClose();
-        resetForm();
-      }
-    }}>
-      <DialogContent className="sm:max-w-md" dir="rtl">
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{editStylist ? "تعديل بيانات المصمم" : "إضافة مصمم جديد"}</DialogTitle>
+          <DialogTitle className="text-salon-green text-xl mb-4">
+            {editStylist ? "Edit Stylist" : "Add New Stylist"}
+          </DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid gap-2">
-            <Label htmlFor="name">اسم المصمم</Label>
-            <Input 
-              id="name" 
-              value={name} 
-              onChange={(e) => setName(e.target.value)}
-              className={errors.name ? "border-red-500" : ""}
+
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Name</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Stylist name" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-            {errors.name && <p className="text-red-500 text-xs">{errors.name}</p>}
-          </div>
-          
-          <div className="grid gap-2">
-            <Label htmlFor="role">دور المصمم</Label>
-            <Input 
-              id="role" 
-              value={role} 
-              onChange={(e) => setRole(e.target.value)}
-              className={errors.role ? "border-red-500" : ""}
-              placeholder="مثال: مصمم شعر أول"
+
+            <FormField
+              control={form.control}
+              name="role"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Role/Title</FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g. Hair Stylist" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-            {errors.role && <p className="text-red-500 text-xs">{errors.role}</p>}
-          </div>
-          
-          <div className="grid gap-2">
-            <Label htmlFor="image">رابط الصورة</Label>
-            <Input 
-              id="image" 
-              value={image} 
-              onChange={(e) => setImage(e.target.value)}
-              className={errors.image ? "border-red-500" : ""}
+
+            <FormField
+              control={form.control}
+              name="image"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Image URL</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Image URL" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-            {errors.image && <p className="text-red-500 text-xs">{errors.image}</p>}
-          </div>
-          
-          <div className="grid gap-2">
-            <Label htmlFor="specialties">التخصصات (مفصولة بفواصل)</Label>
-            <Input 
-              id="specialties" 
-              value={specialties} 
-              onChange={(e) => setSpecialties(e.target.value)}
-              className={errors.specialties ? "border-red-500" : ""}
-              placeholder="مثال: قص الشعر, صبغة الشعر, تسريحات الشعر"
+
+            <FormField
+              control={form.control}
+              name="bio"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Bio</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Stylist bio"
+                      className="h-24"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-            {errors.specialties && <p className="text-red-500 text-xs">{errors.specialties}</p>}
-          </div>
-          
-          <div className="grid gap-2">
-            <Label htmlFor="bio">نبذة عن المصمم (اختياري)</Label>
-            <Textarea 
-              id="bio" 
-              value={bio} 
-              onChange={(e) => setBio(e.target.value)}
-              rows={3}
+
+            <FormField
+              control={form.control}
+              name="specialties"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Specialties</FormLabel>
+                  <div className="flex gap-2 mb-2">
+                    <Input
+                      placeholder="Add a specialty"
+                      value={specialtyInput}
+                      onChange={(e) => setSpecialtyInput(e.target.value)}
+                      className="flex-1"
+                    />
+                    <Button
+                      type="button"
+                      onClick={handleAddSpecialty}
+                      className="bg-salon-green hover:bg-salon-darkGreen text-white"
+                    >
+                      Add
+                    </Button>
+                  </div>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {field.value?.map((specialty) => (
+                      <div
+                        key={specialty}
+                        className="bg-gray-100 px-3 py-1 rounded-full flex items-center gap-1"
+                      >
+                        <span>{specialty}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveSpecialty(specialty)}
+                          className="text-red-500 font-bold text-xs"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </div>
-          
-          <DialogFooter className="sm:justify-start">
-            <Button type="submit">{editStylist ? "تحديث" : "إضافة"}</Button>
-            <Button type="button" variant="outline" onClick={() => {
-              onClose();
-              resetForm();
-            }}>
-              إلغاء
-            </Button>
-          </DialogFooter>
-        </form>
+
+            <FormField
+              control={form.control}
+              name="experience"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Experience (Years)</FormLabel>
+                  <FormControl>
+                    <div className="space-y-2">
+                      <Slider
+                        min={1}
+                        max={30}
+                        step={1}
+                        defaultValue={[field.value]}
+                        onValueChange={(value) => field.onChange(value[0])}
+                      />
+                      <div className="text-right">{field.value} years</div>
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="rating"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Rating</FormLabel>
+                  <FormControl>
+                    <div className="space-y-2">
+                      <Slider
+                        min={1}
+                        max={5}
+                        step={0.1}
+                        defaultValue={[field.value]}
+                        onValueChange={(value) => field.onChange(value[0])}
+                      />
+                      <div className="text-right">{field.value.toFixed(1)} stars</div>
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="available"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                  <div className="space-y-0.5">
+                    <FormLabel>Available</FormLabel>
+                    <FormDescription>
+                      Whether this stylist is currently available for bookings
+                    </FormDescription>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
+            {!editStylist && (
+              <FormField
+                control={form.control}
+                name="user_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Associate with User (Optional)</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a user to associate with this stylist" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="">None (Create without user)</SelectItem>
+                        {existingUsers.map((user) => (
+                          <SelectItem key={user.id} value={user.id}>
+                            {user.email}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      This will allow the user to log in and access the stylist dashboard
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onClose}
+                className="mr-2"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                className="bg-salon-green hover:bg-salon-darkGreen text-white"
+              >
+                {editStylist ? "Update Stylist" : "Add Stylist"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );

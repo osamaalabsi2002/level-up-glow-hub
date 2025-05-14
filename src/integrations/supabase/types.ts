@@ -344,6 +344,7 @@ export type Database = {
       products: {
         Row: {
           created_at: string | null
+          description: string | null
           id: number
           image_url: string
           name: string
@@ -352,6 +353,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          description?: string | null
           id?: number
           image_url: string
           name: string
@@ -360,6 +362,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          description?: string | null
           id?: number
           image_url?: string
           name?: string
