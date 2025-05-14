@@ -21,6 +21,13 @@ interface BookingFormProps {
   stylistName?: string;
 }
 
+// Simple interface for stylist data from the database
+interface StylistBasic {
+  id: number;
+  name: string;
+  available: boolean;
+}
+
 const bookingFormSchema = z.object({
   name: z.string().min(3, { message: "Name must be at least 3 characters" }),
   email: z.string().email({ message: "Please enter a valid email" }),
@@ -50,7 +57,7 @@ const BookingForm = ({ isOpen, onClose, stylistId, stylistName = "" }: BookingFo
   const [services, setServices] = useState<Service[]>([]);
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
   const [selectedDate, setSelectedDate] = useState<string>("");
-  const [stylists, setStylists] = useState<Stylist[]>([]);
+  const [stylists, setStylists] = useState<StylistBasic[]>([]);
   const [formStylistId, setFormStylistId] = useState<number | null>(stylistId || null);
   
   const form = useForm<BookingFormValues>({
