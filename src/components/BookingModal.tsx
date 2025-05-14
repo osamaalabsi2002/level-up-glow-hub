@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface BookingModalProps {
   isOpen: boolean;
@@ -106,6 +107,8 @@ const BookingModal = ({ isOpen, onClose, stylistName = "" }: BookingModalProps) 
     
     if (isOpen) {
       fetchServices();
+      // Initialize default time slots
+      setTimeSlots(getDefaultTimeSlots());
     }
   }, [isOpen]);
 
@@ -119,13 +122,26 @@ const BookingModal = ({ isOpen, onClose, stylistName = "" }: BookingModalProps) 
         .single();
       
       if (error) throw error;
-      if (data) setStylistId(data.id);
+      if (data) {
+        setStylistId(data.id);
+        // Check time slots availability when stylist ID is set
+        if (selectedDate) {
+          checkAvailableTimeSlots(selectedDate, data.id);
+        }
+      }
     } catch (error) {
       console.error('Error fetching stylist ID:', error);
     }
   };
 
   // Check available time slots when date changes
+  useEffect(() => {
+    if (selectedDate && stylistId) {
+      checkAvailableTimeSlots(selectedDate, stylistId);
+    }
+  }, [selectedDate, stylistId]);
+
+  // Check available time slots
   const checkAvailableTimeSlots = async (date: string, stylistIdToCheck: number | null) => {
     if (!date || !stylistIdToCheck) {
       // If no date or stylist, all slots are available
@@ -167,7 +183,9 @@ const BookingModal = ({ isOpen, onClose, stylistName = "" }: BookingModalProps) 
     const newDate = event.target.value;
     form.setValue("date", newDate);
     setSelectedDate(newDate);
-    checkAvailableTimeSlots(newDate, stylistId);
+    
+    // Reset time when date changes
+    form.setValue("time", "");
   };
 
   // Default time slots
@@ -212,15 +230,14 @@ const BookingModal = ({ isOpen, onClose, stylistName = "" }: BookingModalProps) 
         }
       }
 
-      // Store client info in the booking - FIX: Use a single object, not an array
+      // Store client info in the booking
       const bookingData = {
         client_id: user?.id || null,
         stylist_id: finalStylistId,
         service_id: serviceData?.id || null,
         date: data.date,
         time: data.time,
-        status: 'pending' as 'pending' | 'confirmed' | 'completed' | 'canceled', // FIX: Use the correct type
-        // For guest bookings or additional info
+        status: 'pending' as 'pending' | 'confirmed' | 'completed' | 'canceled',
         client_name: data.name,
         client_email: data.email,
         client_phone: data.phone
@@ -228,7 +245,7 @@ const BookingModal = ({ isOpen, onClose, stylistName = "" }: BookingModalProps) 
       
       const { error } = await supabase
         .from('bookings')
-        .insert(bookingData); // FIX: Pass a single object, not an array
+        .insert(bookingData);
       
       if (error) throw error;
       
@@ -353,23 +370,27 @@ const BookingModal = ({ isOpen, onClose, stylistName = "" }: BookingModalProps) 
                   <FormItem>
                     <FormLabel>Time</FormLabel>
                     <FormControl>
-                      <select 
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-salon-green"
-                        disabled={!selectedDate}
-                        {...field}
+                      <Select 
+                        disabled={!selectedDate || timeSlots.length === 0}
+                        onValueChange={field.onChange}
+                        value={field.value}
                       >
-                        <option value="" disabled>Select a time</option>
-                        {timeSlots.map(slot => (
-                          <option 
-                            key={slot.value} 
-                            value={slot.value}
-                            disabled={!slot.available}
-                            className={!slot.available ? "text-red-500" : ""}
-                          >
-                            {slot.label} {!slot.available && "(Booked)"}
-                          </option>
-                        ))}
-                      </select>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select a time" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {timeSlots.map((slot) => (
+                            <SelectItem 
+                              key={slot.value} 
+                              value={slot.value}
+                              disabled={!slot.available}
+                              className={!slot.available ? "text-red-500" : ""}
+                            >
+                              {slot.label} {!slot.available && "(Booked)"}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -384,15 +405,21 @@ const BookingModal = ({ isOpen, onClose, stylistName = "" }: BookingModalProps) 
                 <FormItem>
                   <FormLabel>Service</FormLabel>
                   <FormControl>
-                    <select 
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-salon-green"
-                      {...field}
+                    <Select 
+                      onValueChange={field.onChange}
+                      value={field.value}
                     >
-                      <option value="" disabled>Select a service</option>
-                      {services.map(service => (
-                        <option key={service.id} value={service.id}>{service.label}</option>
-                      ))}
-                    </select>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select a service" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {services.map((service) => (
+                          <SelectItem key={service.id} value={service.id}>
+                            {service.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
