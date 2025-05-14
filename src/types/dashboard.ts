@@ -1,4 +1,3 @@
-
 export interface Booking {
   id: number;
   clientName: string;
@@ -29,9 +28,17 @@ export interface Stylist {
   reviews: number;
   specialties: string[];
   experience: number;
-  services: Service[];
-  clientReviews: any[];
-  user_id?: string; // Link to the auth.users table
+  services?: Service[];
+  clientReviews?: any[];
+  user_id?: string;
+  created_at?: string;
+  updated_at?: string;
+  date_hired?: string;
+  email?: string;
+  phone?: string;
+  featured?: boolean;
+  certifications?: string[];
+  work_hours?: any;
 }
 
 export interface StatsData {

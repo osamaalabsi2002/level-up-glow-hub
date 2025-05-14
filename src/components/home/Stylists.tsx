@@ -27,7 +27,15 @@ const Stylists = () => {
           .limit(3); // Only get the first 3 stylists for the homepage
           
         if (error) throw error;
-        setStylists(data || []);
+        
+        // Transform data to ensure it matches the Stylist interface
+        const transformedData: Stylist[] = data.map(stylist => ({
+          ...stylist,
+          services: [],
+          clientReviews: []
+        }));
+        
+        setStylists(transformedData);
       } catch (error) {
         console.error('Error fetching stylists:', error);
       } finally {

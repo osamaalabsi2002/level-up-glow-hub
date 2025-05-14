@@ -26,7 +26,15 @@ const Stylists = () => {
           .select('*');
           
         if (error) throw error;
-        setStylists(data || []);
+        
+        // Transform data to ensure it matches the Stylist interface
+        const transformedData: Stylist[] = data.map(stylist => ({
+          ...stylist,
+          services: [],
+          clientReviews: []
+        }));
+        
+        setStylists(transformedData);
       } catch (error) {
         console.error('Error fetching stylists:', error);
       } finally {
