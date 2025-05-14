@@ -13,6 +13,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import Services from "./pages/Services";
 import Shop from "./pages/Shop";
 import Blog from "./pages/Blog";
+import BlogPost from "./pages/BlogPost";
 import Contact from "./pages/Contact";
 import Stylists from "./pages/Stylists";
 
@@ -32,6 +33,7 @@ const App = () => (
             <Route path="/stylist/:id" element={<StylistDetail />} />
             <Route path="/shop" element={<Shop />} />
             <Route path="/blog" element={<Blog />} />
+            <Route path="/blog/:slug" element={<BlogPost />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/stylist-dashboard" element={<StylistDashboard />} />
             <Route path="/admin-dashboard" element={<AdminDashboard />} />

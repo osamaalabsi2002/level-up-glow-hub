@@ -1,152 +1,58 @@
 
-import { useState, useEffect } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import DashboardHeader from "@/components/dashboard/DashboardHeader";
-import BookingsTab from "@/components/dashboard/BookingsTab";
-import Navbar from "@/components/layout/Navbar";
-import Footer from "@/components/layout/Footer";
-import { useAuth } from "@/context/AuthContext";
-import AvailabilityManager from "@/components/dashboard/AvailabilityManager";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import { Booking, Stylist } from "@/types/dashboard";
-import { useNavigate } from "react-router-dom";
-import { Loader2 } from "lucide-react";
-import { useBookingOperations } from "@/hooks/useBookingOperations";
+import { useState } from 'react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import DashboardHeader from '@/components/dashboard/DashboardHeader';
+import BookingsTab from '@/components/dashboard/BookingsTab';
+import AvailabilityManager from '@/components/dashboard/AvailabilityManager';
+import DashboardStats from '@/components/dashboard/DashboardStats';
+import BlogsTab from '@/components/admin/BlogsTab';
+import { useAuth } from '@/context/AuthContext';
+import { Navigate } from 'react-router-dom';
 
 const StylistDashboard = () => {
-  const navigate = useNavigate();
-  const { user, profile } = useAuth();
-  const [bookings, setBookings] = useState<Booking[]>([]);
-  const [stylist, setStylist] = useState<Stylist | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("bookings");
-  
-  const { 
-    handleConfirmBooking, 
-    handleDeleteBooking, 
-    isLoading: bookingActionLoading 
-  } = useBookingOperations(bookings);
+  const [activeTab, setActiveTab] = useState('overview');
+  const { profile, loading } = useAuth();
 
-  useEffect(() => {
-    if (!user) {
-      navigate('/');
-      return;
-    }
+  if (loading) {
+    return <div>Loading...</div>;
+  }
 
-    const loadStylistData = async () => {
-      try {
-        setLoading(true);
-        
-        // First, check if the user is a stylist
-        const { data: stylistData, error: stylistError } = await supabase
-          .from('stylists')
-          .select('*')
-          .eq('user_id', user.id)
-          .maybeSingle();
-        
-        if (stylistError) throw stylistError;
-        
-        if (!stylistData) {
-          toast("Access Denied", {
-            description: "You don't have stylist permissions",
-          });
-          navigate('/');
-          return;
-        }
-        
-        setStylist(stylistData);
-        
-        // Fetch bookings for this stylist
-        const { data: bookingsData, error: bookingsError } = await supabase
-          .from('bookings')
-          .select(`
-            id,
-            date,
-            time,
-            status,
-            client_name,
-            services (
-              name
-            )
-          `)
-          .eq('stylist_id', stylistData.id)
-          .order('date', { ascending: true })
-          .order('time', { ascending: true });
-          
-        if (bookingsError) throw bookingsError;
-        
-        if (bookingsData) {
-          // Transform the data to match our Booking interface
-          const formattedBookings: Booking[] = bookingsData.map(booking => ({
-            id: booking.id,
-            date: booking.date,
-            time: booking.time,
-            clientName: booking.client_name || "Unknown",
-            stylistName: stylistData.name,
-            service: booking.services?.name || "Unknown service",
-            status: booking.status || "pending"
-          }));
-          
-          setBookings(formattedBookings);
-        }
-      } catch (error) {
-        console.error("Error loading stylist data:", error);
-        toast("Error", {
-          description: "Failed to load your dashboard data",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadStylistData();
-  }, [user, navigate]);
+  if (!profile || profile.role !== 'stylist') {
+    return <Navigate to="/" replace />;
+  }
 
   return (
-    <div className="flex flex-col min-h-screen">
-      <Navbar />
-      <div className="flex-1 container mx-auto px-4 py-24">
-        <DashboardHeader 
-          title="Stylist Dashboard" 
-          subtitle="Manage your bookings and availability" 
-        />
+    <div className="min-h-screen bg-gray-50">
+      <DashboardHeader title="Stylist Dashboard" role="Stylist" />
+      
+      <div className="container mx-auto py-10 px-4">
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="w-full max-w-4xl mx-auto mb-8">
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="bookings">Bookings</TabsTrigger>
+            <TabsTrigger value="availability">Availability</TabsTrigger>
+            <TabsTrigger value="blogs">Blog</TabsTrigger>
+          </TabsList>
 
-        {loading ? (
-          <div className="flex justify-center py-12">
-            <Loader2 className="h-12 w-12 animate-spin text-salon-green" />
+          <div className="max-w-7xl mx-auto">
+            <TabsContent value="overview">
+              <DashboardStats isStylist />
+            </TabsContent>
+
+            <TabsContent value="bookings">
+              <BookingsTab isStylist />
+            </TabsContent>
+
+            <TabsContent value="availability">
+              <AvailabilityManager />
+            </TabsContent>
+            
+            <TabsContent value="blogs">
+              <BlogsTab />
+            </TabsContent>
           </div>
-        ) : (
-          <>
-            {stylist ? (
-              <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="mt-6">
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="bookings">Bookings</TabsTrigger>
-                  <TabsTrigger value="availability">Availability</TabsTrigger>
-                </TabsList>
-                
-                <TabsContent value="bookings" className="pt-6">
-                  <BookingsTab 
-                    bookings={bookings} 
-                    onConfirmBooking={handleConfirmBooking}
-                    onDeleteBooking={handleDeleteBooking}
-                    loading={bookingActionLoading}
-                  />
-                </TabsContent>
-                
-                <TabsContent value="availability" className="pt-6">
-                  <AvailabilityManager stylistId={stylist.id} />
-                </TabsContent>
-              </Tabs>
-            ) : (
-              <div className="text-center py-12">
-                <p>You don't have stylist permissions.</p>
-              </div>
-            )}
-          </>
-        )}
+        </Tabs>
       </div>
-      <Footer />
     </div>
   );
 };
