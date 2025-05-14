@@ -212,14 +212,14 @@ const BookingModal = ({ isOpen, onClose, stylistName = "" }: BookingModalProps) 
         }
       }
 
-      // Store client info in the booking
+      // Store client info in the booking - FIX: Use a single object, not an array
       const bookingData = {
         client_id: user?.id || null,
         stylist_id: finalStylistId,
         service_id: serviceData?.id || null,
         date: data.date,
         time: data.time,
-        status: 'pending',
+        status: 'pending' as 'pending' | 'confirmed' | 'completed' | 'canceled', // FIX: Use the correct type
         // For guest bookings or additional info
         client_name: data.name,
         client_email: data.email,
@@ -228,7 +228,7 @@ const BookingModal = ({ isOpen, onClose, stylistName = "" }: BookingModalProps) 
       
       const { error } = await supabase
         .from('bookings')
-        .insert([bookingData]);
+        .insert(bookingData); // FIX: Pass a single object, not an array
       
       if (error) throw error;
       
