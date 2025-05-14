@@ -25,7 +25,10 @@ const AdminDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <DashboardHeader title="Admin Dashboard" role="Administrator" />
+      <DashboardHeader 
+        title="Admin Dashboard" 
+        subtitle="Administrator" 
+      />
       
       <div className="container mx-auto py-10 px-4">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -40,18 +43,22 @@ const AdminDashboard = () => {
 
           <div className="max-w-7xl mx-auto">
             <TabsContent value="overview">
+              {/* Using DashboardStats without props for now */}
               <DashboardStats />
             </TabsContent>
 
             <TabsContent value="bookings">
+              {/* Using BookingsTab without props for now */}
               <BookingsTab />
             </TabsContent>
 
             <TabsContent value="services">
+              {/* Using ServicesTab without props for now */}
               <ServicesTab />
             </TabsContent>
 
             <TabsContent value="stylists">
+              {/* Using StylistsTab without props for now */}
               <StylistsTab />
             </TabsContent>
             

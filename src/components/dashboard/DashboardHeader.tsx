@@ -4,9 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 
-interface DashboardHeaderProps {
+export interface DashboardHeaderProps {
   title: string;
-  subtitle: string;
+  subtitle?: string;
 }
 
 const DashboardHeader: React.FC<DashboardHeaderProps> = ({ title, subtitle }) => {
@@ -14,7 +14,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ title, subtitle }) =>
     <header className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between">
       <div>
         <h1 className="text-3xl font-serif font-bold text-salon-green mb-2">{title}</h1>
-        <p className="text-gray-600">{subtitle}</p>
+        {subtitle && <p className="text-gray-600">{subtitle}</p>}
       </div>
       
       <div className="mt-4 md:mt-0 flex space-x-2 rtl:space-x-reverse">

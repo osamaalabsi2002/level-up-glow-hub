@@ -15,6 +15,11 @@ export function useBlogOperations() {
         throw new Error('You must be logged in to create a post');
       }
 
+      // Ensure required fields are present
+      if (!postData.content) {
+        throw new Error('Content is required');
+      }
+
       // Generate a slug if not provided
       if (!postData.slug) {
         postData.slug = postData.title
@@ -23,8 +28,20 @@ export function useBlogOperations() {
           .replace(/[^\w-]+/g, '');
       }
 
+      // Ensure title and slug are provided
+      if (!postData.title || !postData.slug) {
+        throw new Error('Title and slug are required');
+      }
+
       const { data, error } = await supabase.from('blog_posts').insert({
-        ...postData,
+        content: postData.content,
+        title: postData.title,
+        slug: postData.slug,
+        excerpt: postData.excerpt || null,
+        image_url: postData.image_url || null,
+        category_id: postData.category_id || null,
+        read_time: postData.read_time || null,
+        published: postData.published || false,
         author_id: profile.id,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),

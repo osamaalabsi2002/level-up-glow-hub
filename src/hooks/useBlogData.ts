@@ -21,6 +21,7 @@ export type BlogPost = {
   };
   category?: {
     name: string;
+    slug: string;
   };
 };
 
@@ -40,7 +41,7 @@ export function useBlogPosts(categorySlug?: string) {
         .select(`
           *,
           author:author_id(full_name),
-          category:category_id(name)
+          category:category_id(name, slug)
         `)
         .eq('published', true)
         .order('created_at', { ascending: false });
