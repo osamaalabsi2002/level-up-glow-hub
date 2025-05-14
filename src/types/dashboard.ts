@@ -1,3 +1,4 @@
+
 export interface Booking {
   id: number;
   clientName: string;
@@ -71,4 +72,15 @@ export interface CartItem {
   id: number;
   product: Product;
   quantity: number;
+}
+
+export interface UserProfile {
+  id?: string;
+  full_name?: string;
+  avatar_url?: string;
+  phone?: string;
+  email?: string;
+  role?: string;
+  created_at?: string;
+  updated_at?: string;
 }

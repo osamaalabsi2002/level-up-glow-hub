@@ -9,6 +9,14 @@ import { z } from "zod";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { UserProfile } from "@/types/dashboard";
+import {
+  FormField,
+  FormItem,
+  FormLabel,
+  FormControl,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
 
 import UserInfoFields from "./UserInfoFields";
 import DateSelector from "./DateSelector";
@@ -210,19 +218,7 @@ const BookingForm = ({ onClose, stylistName = "", user, profile }: BookingFormPr
 
         {/* Only show stylist field if not already selected */}
         {!stylistName && (
-          <FormField
-            control={form.control}
-            name="stylist"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Preferred Stylist (Optional)</FormLabel>
-                <FormControl>
-                  <Input placeholder="Enter stylist name (if any)" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          <StylistField form={form} />
         )}
 
         <div className="flex justify-end pt-4">
