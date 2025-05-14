@@ -1,9 +1,10 @@
+
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { useAuth } from "@/context/AuthContext";
-import { useBlogPosts, useBlogCategories, BlogPost } from "@/hooks/useBlogData";
+import { useBlogPosts, useBlogCategories } from "@/hooks/useBlogData";
 import { useBlogOperations } from "@/hooks/useBlogOperations";
 import BlogPostFormModal from "@/components/blog/BlogPostFormModal";
 import BlogHeader from "@/components/blog/BlogHeader";
@@ -16,30 +17,40 @@ const Blog = () => {
   const { profile } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const categoryParam = searchParams.get("category") || "all";
-  const [currentPage, setCurrentPage] = useState(1);
-  const totalPages = 3; // Hardcoded for now, could be calculated from API response
+  const pageParam = Number(searchParams.get("page") || 1);
+  const [currentPage, setCurrentPage] = useState(pageParam);
+  const PAGE_SIZE = 8; // Define page size (8 posts per page, 1 for featured)
   
-  const [selectedPost, setSelectedPost] = useState<BlogPost | undefined>(undefined);
+  const [selectedPost, setSelectedPost] = useState(undefined);
   const [isModalOpen, setIsModalOpen] = useState(false);
   
-  const { data: posts = [], isLoading: isLoadingPosts } = useBlogPosts(categoryParam);
+  const { data: blogData, isLoading: isLoadingPosts } = useBlogPosts(categoryParam, currentPage, PAGE_SIZE);
   const { data: categories = [], isLoading: isLoadingCategories } = useBlogCategories();
   const { deletePost } = useBlogOperations();
+  
+  const posts = blogData?.posts || [];
+  const paginationMeta = blogData?.meta || { 
+    currentPage: 1, 
+    totalPages: 1, 
+    totalCount: 0, 
+    pageSize: PAGE_SIZE 
+  };
   
   const isAdminOrStylist = profile?.role === "admin" || profile?.role === "stylist";
 
   const handleCategoryChange = (category: string) => {
     if (category === "all") {
       searchParams.delete("category");
-      setSearchParams(searchParams);
     } else {
-      setSearchParams({ category });
+      searchParams.set("category", category);
     }
     // Reset to first page when changing categories
+    searchParams.set("page", "1");
+    setSearchParams(searchParams);
     setCurrentPage(1);
   };
 
-  const handleEditPost = (post: BlogPost) => {
+  const handleEditPost = (post) => {
     setSelectedPost(post);
     setIsModalOpen(true);
   };
@@ -59,8 +70,8 @@ const Blog = () => {
   
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
-    // In a real implementation, this would fetch the posts for the new page
-    // We're using client-side pagination for now
+    searchParams.set("page", page.toString());
+    setSearchParams(searchParams);
   };
 
   // Find the featured post (most recent)
@@ -109,8 +120,8 @@ const Blog = () => {
           {/* Pagination */}
           {!isLoadingPosts && regularPosts.length > 0 && (
             <BlogPagination 
-              currentPage={currentPage}
-              totalPages={totalPages}
+              currentPage={paginationMeta.currentPage}
+              totalPages={paginationMeta.totalPages}
               onPageChange={handlePageChange}
             />
           )}
