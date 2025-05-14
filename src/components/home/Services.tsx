@@ -116,7 +116,7 @@ const Services = () => {
     };
 
     fetchServices();
-  }, [serviceCategories]); // Include serviceCategories in the dependency array
+  }, []); // Remove serviceCategories from dependency array to prevent infinite loop
 
   return (
     <section className="py-20 bg-white" id="services">
