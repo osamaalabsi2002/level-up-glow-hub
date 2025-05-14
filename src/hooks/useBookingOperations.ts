@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { Booking } from "@/types/dashboard";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 
 export const useBookingOperations = (initialBookings: Booking[]) => {
   const [localBookings, setLocalBookings] = useState<Booking[]>(initialBookings);
@@ -25,17 +25,10 @@ export const useBookingOperations = (initialBookings: Booking[]) => {
         booking.id === id ? {...booking, status: "canceled" as const} : booking
       ));
       
-      toast({
-        title: "Success",
-        description: `Booking #${id} canceled successfully`,
-      });
+      return true;
     } catch (error) {
       console.error("Error canceling booking:", error);
-      toast({
-        title: "Error",
-        description: "Failed to cancel booking",
-        variant: "destructive"
-      });
+      throw error;
     } finally {
       setIsLoading(false);
     }
@@ -58,17 +51,10 @@ export const useBookingOperations = (initialBookings: Booking[]) => {
         booking.id === id ? {...booking, status: "confirmed" as const} : booking
       ));
       
-      toast({
-        title: "Success",
-        description: `Booking #${id} confirmed successfully`,
-      });
+      return true;
     } catch (error) {
       console.error("Error confirming booking:", error);
-      toast({
-        title: "Error",
-        description: "Failed to confirm booking",
-        variant: "destructive"
-      });
+      throw error;
     } finally {
       setIsLoading(false);
     }

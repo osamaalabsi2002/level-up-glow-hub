@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, Clock, User, CheckCircle, XCircle } from "lucide-react";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { Booking } from "@/types/dashboard";
 
@@ -16,24 +15,13 @@ interface BookingsTabProps {
 }
 
 const BookingsTab = ({ bookings, onConfirmBooking, onDeleteBooking, loading }: BookingsTabProps) => {
-  const [localBookings, setLocalBookings] = useState<Booking[]>(bookings);
   const [processingIds, setProcessingIds] = useState<number[]>([]);
 
   // Handle confirm booking
   const handleConfirm = async (id: number) => {
     setProcessingIds(prev => [...prev, id]);
     try {
-      const { error } = await supabase
-        .from('bookings')
-        .update({ status: 'confirmed' })
-        .eq('id', id);
-      
-      if (error) throw error;
-      
-      onConfirmBooking(id);
-      setLocalBookings(localBookings.map(booking => 
-        booking.id === id ? {...booking, status: "confirmed" as const} : booking
-      ));
+      await onConfirmBooking(id);
       toast.success(`تم تأكيد الموعد #${id}`);
     } catch (error) {
       console.error("Error confirming booking:", error);
@@ -47,15 +35,7 @@ const BookingsTab = ({ bookings, onConfirmBooking, onDeleteBooking, loading }: B
   const handleDelete = async (id: number) => {
     setProcessingIds(prev => [...prev, id]);
     try {
-      const { error } = await supabase
-        .from('bookings')
-        .update({ status: 'canceled' })
-        .eq('id', id);
-      
-      if (error) throw error;
-      
-      onDeleteBooking(id);
-      setLocalBookings(localBookings.filter(booking => booking.id !== id));
+      await onDeleteBooking(id);
       toast.success(`تم إلغاء الموعد #${id}`);
     } catch (error) {
       console.error("Error canceling booking:", error);
@@ -91,7 +71,7 @@ const BookingsTab = ({ bookings, onConfirmBooking, onDeleteBooking, loading }: B
 
   return (
     <div>
-      {localBookings.length > 0 ? (
+      {bookings.length > 0 ? (
         <div className="rounded-md border overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -108,7 +88,7 @@ const BookingsTab = ({ bookings, onConfirmBooking, onDeleteBooking, loading }: B
                 </tr>
               </thead>
               <tbody>
-                {localBookings.map((booking) => (
+                {bookings.map((booking) => (
                   <tr key={booking.id} className="border-b">
                     <td className="p-4 align-middle">{booking.id}</td>
                     <td className="p-4 align-middle">
@@ -141,7 +121,7 @@ const BookingsTab = ({ bookings, onConfirmBooking, onDeleteBooking, loading }: B
                             size="sm" 
                             className="bg-salon-green hover:bg-salon-darkGreen text-white"
                             onClick={() => handleConfirm(booking.id)}
-                            disabled={processingIds.includes(booking.id)}
+                            disabled={processingIds.includes(booking.id) || loading}
                           >
                             <CheckCircle className="h-4 w-4 mr-1" />
                             تأكيد
@@ -153,7 +133,7 @@ const BookingsTab = ({ bookings, onConfirmBooking, onDeleteBooking, loading }: B
                             size="sm" 
                             className="border-red-500 hover:bg-red-50 text-red-500"
                             onClick={() => handleDelete(booking.id)}
-                            disabled={processingIds.includes(booking.id)}
+                            disabled={processingIds.includes(booking.id) || loading}
                           >
                             <XCircle className="h-4 w-4 mr-1" />
                             إلغاء

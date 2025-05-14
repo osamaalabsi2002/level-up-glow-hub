@@ -8,20 +8,29 @@ import Footer from "@/components/layout/Footer";
 import { useAuth } from "@/context/AuthContext";
 import AvailabilityManager from "@/components/dashboard/AvailabilityManager";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 import { Booking, Stylist } from "@/types/dashboard";
-import { redirect } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
+import { useBookingOperations } from "@/hooks/useBookingOperations";
 
 const StylistDashboard = () => {
+  const navigate = useNavigate();
   const { user, profile } = useAuth();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [stylist, setStylist] = useState<Stylist | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("bookings");
+  
+  const { 
+    handleConfirmBooking, 
+    handleDeleteBooking, 
+    isLoading: bookingActionLoading 
+  } = useBookingOperations(bookings);
 
   useEffect(() => {
     if (!user) {
+      navigate('/');
       return;
     }
 
@@ -39,12 +48,11 @@ const StylistDashboard = () => {
         if (stylistError) throw stylistError;
         
         if (!stylistData) {
-          toast({
-            title: "Access Denied",
+          toast("Access Denied", {
             description: "You don't have stylist permissions",
-            variant: "destructive"
           });
-          return redirect('/');
+          navigate('/');
+          return;
         }
         
         setStylist(stylistData);
@@ -57,7 +65,7 @@ const StylistDashboard = () => {
             date,
             time,
             status,
-            client_name as clientName,
+            client_name,
             services (
               name
             )
@@ -68,24 +76,24 @@ const StylistDashboard = () => {
           
         if (bookingsError) throw bookingsError;
         
-        // Transform the data to match our Booking interface
-        const formattedBookings: Booking[] = bookingsData.map(booking => ({
-          id: booking.id,
-          date: booking.date,
-          time: booking.time,
-          clientName: booking.clientName || "Unknown",
-          stylistName: stylistData.name,
-          service: booking.services?.name || "Unknown service",
-          status: booking.status || "pending"
-        }));
-        
-        setBookings(formattedBookings);
+        if (bookingsData) {
+          // Transform the data to match our Booking interface
+          const formattedBookings: Booking[] = bookingsData.map(booking => ({
+            id: booking.id,
+            date: booking.date,
+            time: booking.time,
+            clientName: booking.client_name || "Unknown",
+            stylistName: stylistData.name,
+            service: booking.services?.name || "Unknown service",
+            status: booking.status || "pending"
+          }));
+          
+          setBookings(formattedBookings);
+        }
       } catch (error) {
         console.error("Error loading stylist data:", error);
-        toast({
-          title: "Error",
+        toast("Error", {
           description: "Failed to load your dashboard data",
-          variant: "destructive"
         });
       } finally {
         setLoading(false);
@@ -93,17 +101,16 @@ const StylistDashboard = () => {
     };
 
     loadStylistData();
-  }, [user]);
-
-  if (!user) {
-    return redirect('/login');
-  }
+  }, [user, navigate]);
 
   return (
     <div className="flex flex-col min-h-screen">
       <Navbar />
       <div className="flex-1 container mx-auto px-4 py-24">
-        <DashboardHeader title="Stylist Dashboard" userRole="stylist" />
+        <DashboardHeader 
+          title="Stylist Dashboard" 
+          subtitle="Manage your bookings and availability" 
+        />
 
         {loading ? (
           <div className="flex justify-center py-12">
@@ -119,7 +126,12 @@ const StylistDashboard = () => {
                 </TabsList>
                 
                 <TabsContent value="bookings" className="pt-6">
-                  <BookingsTab bookings={bookings} />
+                  <BookingsTab 
+                    bookings={bookings} 
+                    onConfirmBooking={handleConfirmBooking}
+                    onDeleteBooking={handleDeleteBooking}
+                    loading={bookingActionLoading}
+                  />
                 </TabsContent>
                 
                 <TabsContent value="availability" className="pt-6">
