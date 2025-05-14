@@ -369,29 +369,29 @@ const BookingModal = ({ isOpen, onClose, stylistName = "" }: BookingModalProps) 
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Time</FormLabel>
-                    <FormControl>
-                      <Select 
-                        disabled={!selectedDate || timeSlots.length === 0}
-                        onValueChange={field.onChange}
-                        value={field.value}
-                      >
+                    <Select 
+                      disabled={!selectedDate}
+                      onValueChange={field.onChange}
+                      value={field.value}
+                    >
+                      <FormControl>
                         <SelectTrigger className="w-full">
                           <SelectValue placeholder="Select a time" />
                         </SelectTrigger>
-                        <SelectContent>
-                          {timeSlots.map((slot) => (
-                            <SelectItem 
-                              key={slot.value} 
-                              value={slot.value}
-                              disabled={!slot.available}
-                              className={!slot.available ? "text-red-500" : ""}
-                            >
-                              {slot.label} {!slot.available && "(Booked)"}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </FormControl>
+                      </FormControl>
+                      <SelectContent>
+                        {timeSlots.map((slot) => (
+                          <SelectItem 
+                            key={slot.value} 
+                            value={slot.value}
+                            disabled={!slot.available}
+                            className={!slot.available ? "text-red-500" : ""}
+                          >
+                            {slot.label} {!slot.available && "(Booked)"}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -404,23 +404,23 @@ const BookingModal = ({ isOpen, onClose, stylistName = "" }: BookingModalProps) 
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Service</FormLabel>
-                  <FormControl>
-                    <Select 
-                      onValueChange={field.onChange}
-                      value={field.value}
-                    >
+                  <Select 
+                    onValueChange={field.onChange}
+                    value={field.value}
+                  >
+                    <FormControl>
                       <SelectTrigger className="w-full">
                         <SelectValue placeholder="Select a service" />
                       </SelectTrigger>
-                      <SelectContent>
-                        {services.map((service) => (
-                          <SelectItem key={service.id} value={service.id}>
-                            {service.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </FormControl>
+                    </FormControl>
+                    <SelectContent>
+                      {services.map((service) => (
+                        <SelectItem key={service.id} value={service.id}>
+                          {service.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}
