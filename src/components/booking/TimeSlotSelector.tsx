@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/select";
 import { UseFormReturn } from "react-hook-form";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface TimeSlot {
   value: string;
@@ -31,6 +32,7 @@ interface TimeSlotSelectorProps {
 
 const TimeSlotSelector = ({ form, selectedDate, stylistId }: TimeSlotSelectorProps) => {
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
+  const [loading, setLoading] = useState(false);
 
   // Check available time slots when date changes
   useEffect(() => {
@@ -50,6 +52,9 @@ const TimeSlotSelector = ({ form, selectedDate, stylistId }: TimeSlotSelectorPro
     }
 
     try {
+      setLoading(true);
+      console.log("Checking bookings for date:", date, "and stylist:", stylistIdToCheck);
+      
       // Fetch bookings for this stylist on this date
       const { data: bookings, error } = await supabase
         .from('bookings')
@@ -58,24 +63,35 @@ const TimeSlotSelector = ({ form, selectedDate, stylistId }: TimeSlotSelectorPro
         .eq('date', date)
         .neq('status', 'canceled');
       
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching bookings:", error);
+        toast.error("Failed to check time availability");
+        throw error;
+      }
+      
+      console.log("Bookings found:", bookings);
 
       // Default time slots (all available)
       const slots = getDefaultTimeSlots();
       
       // Mark booked slots as unavailable
       if (bookings && bookings.length > 0) {
-        return setTimeSlots(slots.map(slot => {
+        const updatedSlots = slots.map(slot => {
           const isBooked = bookings.some(booking => booking.time === slot.value);
           return { ...slot, available: !isBooked };
-        }));
+        });
+        console.log("Updated time slots:", updatedSlots);
+        setTimeSlots(updatedSlots);
+      } else {
+        console.log("No bookings found, all slots available");
+        setTimeSlots(slots);
       }
-
-      return setTimeSlots(slots);
     } catch (error) {
       console.error('Error checking time slots:', error);
       // In case of error, return default slots
-      return setTimeSlots(getDefaultTimeSlots());
+      setTimeSlots(getDefaultTimeSlots());
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -100,7 +116,7 @@ const TimeSlotSelector = ({ form, selectedDate, stylistId }: TimeSlotSelectorPro
         <FormItem>
           <FormLabel>Time</FormLabel>
           <Select 
-            disabled={!selectedDate}
+            disabled={!selectedDate || !stylistId || loading}
             onValueChange={field.onChange}
             value={field.value}
           >
@@ -115,13 +131,15 @@ const TimeSlotSelector = ({ form, selectedDate, stylistId }: TimeSlotSelectorPro
                   key={slot.value} 
                   value={slot.value}
                   disabled={!slot.available}
-                  className={!slot.available ? "text-red-500" : ""}
+                  className={!slot.available ? "text-red-500 opacity-50" : ""}
                 >
                   {slot.label} {!slot.available && "(Booked)"}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
+          {!selectedDate && <p className="text-xs text-muted-foreground mt-1">Select a date first</p>}
+          {selectedDate && !stylistId && <p className="text-xs text-muted-foreground mt-1">Select a stylist first</p>}
           <FormMessage />
         </FormItem>
       )}

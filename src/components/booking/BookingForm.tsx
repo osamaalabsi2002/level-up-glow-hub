@@ -91,17 +91,26 @@ const BookingForm = ({ onClose, stylistName = "", user, profile }: BookingFormPr
   useEffect(() => {
     const fetchServices = async () => {
       try {
+        console.log("Fetching services...");
         const { data, error } = await supabase
           .from('services')
           .select('id, name');
         
-        if (error) throw error;
+        if (error) {
+          console.error("Error fetching services:", error);
+          toast.error("Failed to load services");
+          throw error;
+        }
         
         if (data && data.length > 0) {
-          setServices(data.map(service => ({
+          const formattedServices = data.map(service => ({
             id: service.name,
             label: service.name
-          })));
+          }));
+          console.log("Services fetched:", formattedServices);
+          setServices(formattedServices);
+        } else {
+          console.log("No services found");
         }
       } catch (error) {
         console.error('Error fetching services:', error);
@@ -114,15 +123,23 @@ const BookingForm = ({ onClose, stylistName = "", user, profile }: BookingFormPr
   // Fetch stylist ID by name
   const fetchStylistId = async (name: string) => {
     try {
+      console.log("Fetching stylist ID for:", name);
       const { data, error } = await supabase
         .from('stylists')
         .select('id')
         .eq('name', name)
         .single();
       
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching stylist ID:", error);
+        throw error;
+      }
+      
       if (data) {
+        console.log("Stylist ID found:", data.id);
         setStylistId(data.id);
+      } else {
+        console.log("No stylist found with name:", name);
       }
     } catch (error) {
       console.error('Error fetching stylist ID:', error);
@@ -132,6 +149,7 @@ const BookingForm = ({ onClose, stylistName = "", user, profile }: BookingFormPr
   // Handle date change
   const handleDateChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const newDate = event.target.value;
+    console.log("Date changed to:", newDate);
     form.setValue("date", newDate);
     setSelectedDate(newDate);
     
@@ -139,9 +157,16 @@ const BookingForm = ({ onClose, stylistName = "", user, profile }: BookingFormPr
     form.setValue("time", "");
   };
 
+  // Handle stylist selection from StylistField
+  const handleStylistSelect = (id: number | null) => {
+    console.log("Stylist selected with ID:", id);
+    setStylistId(id);
+  };
+
   const handleSubmit = async (data: BookingFormValues) => {
     try {
       setLoading(true);
+      console.log("Submitting booking form with data:", data);
       
       // Get service ID based on selection
       const { data: serviceData, error: serviceError } = await supabase
@@ -151,12 +176,14 @@ const BookingForm = ({ onClose, stylistName = "", user, profile }: BookingFormPr
         .single();
       
       if (serviceError && serviceError.code !== 'PGRST116') {
+        console.error("Error fetching service data:", serviceError);
         throw serviceError;
       }
       
       // If stylistName not provided, try to find stylist by the entered name
       let finalStylistId = stylistId;
       if (!finalStylistId && data.stylist) {
+        console.log("Looking up stylist by name:", data.stylist);
         const { data: stylistData } = await supabase
           .from('stylists')
           .select('id')
@@ -164,7 +191,10 @@ const BookingForm = ({ onClose, stylistName = "", user, profile }: BookingFormPr
           .maybeSingle();
         
         if (stylistData) {
+          console.log("Found stylist ID:", stylistData.id);
           finalStylistId = stylistData.id;
+        } else {
+          console.log("No stylist found with name:", data.stylist);
         }
       }
 
@@ -181,12 +211,19 @@ const BookingForm = ({ onClose, stylistName = "", user, profile }: BookingFormPr
         client_phone: data.phone
       };
       
+      console.log("Booking data to insert:", bookingData);
+      
       const { error } = await supabase
         .from('bookings')
         .insert(bookingData);
       
-      if (error) throw error;
+      if (error) {
+        console.error("Error inserting booking:", error);
+        toast.error("Booking failed: " + error.message);
+        throw error;
+      }
       
+      console.log("Booking successful!");
       toast.success("Booking successful!", {
         description: "We'll contact you shortly to confirm your appointment.",
       });
@@ -218,7 +255,7 @@ const BookingForm = ({ onClose, stylistName = "", user, profile }: BookingFormPr
 
         {/* Only show stylist field if not already selected */}
         {!stylistName && (
-          <StylistField form={form} />
+          <StylistField form={form} onStylistSelect={handleStylistSelect} />
         )}
 
         <div className="flex justify-end pt-4">
