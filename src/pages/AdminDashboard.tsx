@@ -10,18 +10,65 @@ import BlogsTab from '@/components/admin/BlogsTab';
 import DashboardStats from '@/components/dashboard/DashboardStats';
 import { useAuth } from '@/context/AuthContext';
 import { Navigate } from 'react-router-dom';
+import { useDashboardData } from '@/hooks/useDashboardData';
+import { useBookingOperations } from '@/hooks/useBookingOperations';
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
-  const { profile, loading } = useAuth();
+  const { profile, loading: authLoading } = useAuth();
+  
+  // Use the dashboard data hook to get all necessary data
+  const { 
+    bookings, 
+    services, 
+    stylists, 
+    loading, 
+    fetchData,
+    statsData,
+    setBookings,
+    setServices,
+    setStylists
+  } = useDashboardData();
+  
+  // Use booking operations
+  const { 
+    handleConfirmBooking, 
+    handleDeleteBooking,
+    isLoading: bookingLoading 
+  } = useBookingOperations(bookings);
 
-  if (loading) {
+  if (authLoading) {
     return <div>Loading...</div>;
   }
 
   if (!profile || profile.role !== 'admin') {
     return <Navigate to="/" replace />;
   }
+
+  // Handlers for CRUD operations
+  const handleAddService = (service) => {
+    setServices([...services, service]);
+  };
+  
+  const handleEditService = (updatedService) => {
+    setServices(services.map(service => 
+      service.id === updatedService.id ? updatedService : service
+    ));
+  };
+  
+  const handleDeleteService = (id) => {
+    setServices(services.filter(service => service.id !== id));
+  };
+  
+  const handleAddStaff = (stylist) => {
+    setStylists([...stylists, stylist]);
+  };
+  
+  const handleEditStaff = (updatedStylist) => {
+    setStylists(stylists.map(stylist => 
+      stylist.id === updatedStylist.id ? updatedStylist : stylist
+    ));
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -43,23 +90,39 @@ const AdminDashboard = () => {
 
           <div className="max-w-7xl mx-auto">
             <TabsContent value="overview">
-              {/* Using DashboardStats without props for now */}
-              <DashboardStats />
+              <DashboardStats 
+                bookingsCount={statsData.bookingsCount}
+                stylistsCount={statsData.stylistsCount}
+                todayBookingsCount={statsData.todayBookingsCount}
+                averageRating={statsData.averageRating}
+              />
             </TabsContent>
 
             <TabsContent value="bookings">
-              {/* Using BookingsTab without props for now */}
-              <BookingsTab />
+              <BookingsTab 
+                bookings={bookings}
+                onConfirmBooking={handleConfirmBooking}
+                onDeleteBooking={handleDeleteBooking}
+                loading={loading || bookingLoading}
+              />
             </TabsContent>
 
             <TabsContent value="services">
-              {/* Using ServicesTab without props for now */}
-              <ServicesTab />
+              <ServicesTab 
+                services={services}
+                onAddService={handleAddService}
+                onEditService={handleEditService}
+                onDeleteService={handleDeleteService}
+                loading={loading}
+              />
             </TabsContent>
 
             <TabsContent value="stylists">
-              {/* Using StylistsTab without props for now */}
-              <StylistsTab />
+              <StylistsTab 
+                stylists={stylists}
+                onAddStaff={handleAddStaff}
+                onEditStaff={handleEditStaff}
+              />
             </TabsContent>
             
             <TabsContent value="products">

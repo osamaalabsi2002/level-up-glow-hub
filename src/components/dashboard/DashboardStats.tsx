@@ -8,7 +8,7 @@ interface StatsProps {
   averageRating: number;
 }
 
-const DashboardStats = ({ bookingsCount, stylistsCount, todayBookingsCount, averageRating }: StatsProps) => {
+const DashboardStats = ({ bookingsCount = 0, stylistsCount = 0, todayBookingsCount = 0, averageRating = 0 }: StatsProps) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
       <Card>

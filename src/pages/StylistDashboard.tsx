@@ -8,12 +8,28 @@ import DashboardStats from '@/components/dashboard/DashboardStats';
 import BlogsTab from '@/components/admin/BlogsTab';
 import { useAuth } from '@/context/AuthContext';
 import { Navigate } from 'react-router-dom';
+import { useDashboardData } from '@/hooks/useDashboardData';
+import { useBookingOperations } from '@/hooks/useBookingOperations';
 
 const StylistDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
-  const { profile, loading } = useAuth();
-
-  if (loading) {
+  const { profile, loading: authLoading } = useAuth();
+  
+  // Use the dashboard data hook to get necessary data
+  const { 
+    bookings, 
+    loading, 
+    statsData 
+  } = useDashboardData();
+  
+  // Use booking operations
+  const { 
+    handleConfirmBooking, 
+    handleDeleteBooking,
+    isLoading: bookingLoading 
+  } = useBookingOperations(bookings);
+  
+  if (authLoading) {
     return <div>Loading...</div>;
   }
 
@@ -44,13 +60,21 @@ const StylistDashboard = () => {
 
           <div className="max-w-7xl mx-auto">
             <TabsContent value="overview">
-              {/* Using DashboardStats without props for now */}
-              <DashboardStats />
+              <DashboardStats 
+                bookingsCount={statsData.bookingsCount}
+                stylistsCount={statsData.stylistsCount}
+                todayBookingsCount={statsData.todayBookingsCount}
+                averageRating={statsData.averageRating}
+              />
             </TabsContent>
 
             <TabsContent value="bookings">
-              {/* Using BookingsTab without props for now */}
-              <BookingsTab />
+              <BookingsTab 
+                bookings={bookings}
+                onConfirmBooking={handleConfirmBooking}
+                onDeleteBooking={handleDeleteBooking}
+                loading={loading || bookingLoading}
+              />
             </TabsContent>
 
             <TabsContent value="availability">
