@@ -608,12 +608,14 @@ export type Database = {
     }
     Functions: {
       check_stylist_availability: {
-        Args: {
-          p_stylist_id: number
-          p_date: string
-          p_time: string
-          p_duration?: number
-        }
+        Args:
+          | { p_stylist_id: number; p_date: string; p_time: string }
+          | {
+              p_stylist_id: number
+              p_date: string
+              p_time: string
+              p_duration?: number
+            }
         Returns: boolean
       }
       generate_slug: {

@@ -6,17 +6,9 @@ import { Calendar } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { UserProfile } from "@/types/dashboard";
-import {
-  FormField,
-  FormItem,
-  FormLabel,
-  FormControl,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
 
 import UserInfoFields from "./UserInfoFields";
 import DateSelector from "./DateSelector";
@@ -98,7 +90,11 @@ const BookingForm = ({ onClose, stylistName = "", user, profile }: BookingFormPr
         
         if (error) {
           console.error("Error fetching services:", error);
-          toast.error("Failed to load services");
+          toast({
+            title: "Error",
+            description: "Failed to load services",
+            variant: "destructive"
+          });
           throw error;
         }
         
@@ -161,6 +157,11 @@ const BookingForm = ({ onClose, stylistName = "", user, profile }: BookingFormPr
   const handleStylistSelect = (id: number | null) => {
     console.log("Stylist selected with ID:", id);
     setStylistId(id);
+    
+    // Reset date and time when stylist changes
+    form.setValue("date", "");
+    form.setValue("time", "");
+    setSelectedDate("");
   };
 
   const handleSubmit = async (data: BookingFormValues) => {
@@ -219,12 +220,17 @@ const BookingForm = ({ onClose, stylistName = "", user, profile }: BookingFormPr
       
       if (error) {
         console.error("Error inserting booking:", error);
-        toast.error("Booking failed: " + error.message);
+        toast({
+          title: "Booking failed",
+          description: error.message,
+          variant: "destructive"
+        });
         throw error;
       }
       
       console.log("Booking successful!");
-      toast.success("Booking successful!", {
+      toast({
+        title: "Booking successful!",
         description: "We'll contact you shortly to confirm your appointment.",
       });
       
@@ -232,7 +238,11 @@ const BookingForm = ({ onClose, stylistName = "", user, profile }: BookingFormPr
       form.reset();
     } catch (error: any) {
       console.error("Booking error:", error);
-      toast.error(error.message || "Failed to create booking. Please try again.");
+      toast({
+        title: "Booking failed",
+        description: error.message || "Failed to create booking. Please try again.",
+        variant: "destructive"
+      });
     } finally {
       setLoading(false);
     }
@@ -246,8 +256,16 @@ const BookingForm = ({ onClose, stylistName = "", user, profile }: BookingFormPr
 
         {/* Date and Time Selection */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <DateSelector form={form} handleDateChange={handleDateChange} />
-          <TimeSlotSelector form={form} selectedDate={selectedDate} stylistId={stylistId} />
+          <DateSelector 
+            form={form} 
+            handleDateChange={handleDateChange} 
+            stylistId={stylistId}
+          />
+          <TimeSlotSelector 
+            form={form} 
+            selectedDate={selectedDate} 
+            stylistId={stylistId} 
+          />
         </div>
 
         {/* Service Selection */}
