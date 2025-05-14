@@ -18,7 +18,8 @@ import { UseFormReturn } from "react-hook-form";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
 import { format, parse } from "date-fns";
-import { Loader2 } from "lucide-react";
+import { Loader2, Clock, Calendar, AlertCircle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface TimeSlot {
   value: string;
@@ -35,6 +36,7 @@ interface TimeSlotSelectorProps {
 const TimeSlotSelector = ({ form, selectedDate, stylistId }: TimeSlotSelectorProps) => {
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
   const [loading, setLoading] = useState(false);
+  const [noAvailableTimes, setNoAvailableTimes] = useState(false);
 
   // Check available time slots when date changes
   useEffect(() => {
@@ -44,6 +46,7 @@ const TimeSlotSelector = ({ form, selectedDate, stylistId }: TimeSlotSelectorPro
       // Reset time slots if no date or stylist selected
       setTimeSlots([]);
       form.setValue("time", "");
+      setNoAvailableTimes(false);
     }
   }, [selectedDate, stylistId, form]);
 
@@ -87,8 +90,12 @@ const TimeSlotSelector = ({ form, selectedDate, stylistId }: TimeSlotSelectorPro
         })
       );
       
-      console.log("Available time slots:", availabilityChecks);
-      setTimeSlots(availabilityChecks);
+      // Filter to only available time slots
+      const availableTimeSlots = availabilityChecks.filter(slot => slot.available);
+      console.log("Available time slots:", availableTimeSlots);
+      
+      setTimeSlots(availableTimeSlots);
+      setNoAvailableTimes(availableTimeSlots.length === 0);
     } catch (error) {
       console.error('Error checking time slots:', error);
       toast({
@@ -96,7 +103,8 @@ const TimeSlotSelector = ({ form, selectedDate, stylistId }: TimeSlotSelectorPro
         description: "Failed to check available time slots",
         variant: "destructive"
       });
-      setTimeSlots(getDefaultTimeSlots().map(slot => ({ ...slot, available: false })));
+      setTimeSlots([]);
+      setNoAvailableTimes(true);
     } finally {
       setLoading(false);
     }
@@ -104,19 +112,19 @@ const TimeSlotSelector = ({ form, selectedDate, stylistId }: TimeSlotSelectorPro
 
   // Default time slots (business hours)
   const getDefaultTimeSlots = (): TimeSlot[] => [
-    { value: "09:00 AM", label: "09:00 AM", available: true },
+    { value: "09:00 AM", label: "9:00 AM", available: true },
     { value: "10:00 AM", label: "10:00 AM", available: true },
     { value: "11:00 AM", label: "11:00 AM", available: true },
     { value: "12:00 PM", label: "12:00 PM", available: true },
-    { value: "01:00 PM", label: "01:00 PM", available: true },
-    { value: "02:00 PM", label: "02:00 PM", available: true },
-    { value: "03:00 PM", label: "03:00 PM", available: true },
-    { value: "04:00 PM", label: "04:00 PM", available: true },
-    { value: "05:00 PM", label: "05:00 PM", available: true },
-    { value: "06:00 PM", label: "06:00 PM", available: true },
-    { value: "07:00 PM", label: "07:00 PM", available: true },
-    { value: "08:00 PM", label: "08:00 PM", available: true },
-    { value: "09:00 PM", label: "09:00 PM", available: true }
+    { value: "01:00 PM", label: "1:00 PM", available: true },
+    { value: "02:00 PM", label: "2:00 PM", available: true },
+    { value: "03:00 PM", label: "3:00 PM", available: true },
+    { value: "04:00 PM", label: "4:00 PM", available: true },
+    { value: "05:00 PM", label: "5:00 PM", available: true },
+    { value: "06:00 PM", label: "6:00 PM", available: true },
+    { value: "07:00 PM", label: "7:00 PM", available: true },
+    { value: "08:00 PM", label: "8:00 PM", available: true },
+    { value: "09:00 PM", label: "9:00 PM", available: true }
   ];
 
   return (
@@ -125,15 +133,52 @@ const TimeSlotSelector = ({ form, selectedDate, stylistId }: TimeSlotSelectorPro
       name="time"
       render={({ field }) => (
         <FormItem>
-          <FormLabel>Time</FormLabel>
+          <FormLabel className="flex items-center gap-1.5">
+            <Clock className="h-4 w-4" />
+            Available Times
+          </FormLabel>
+          
+          {!selectedDate && (
+            <Alert variant="default" className="bg-amber-50 text-amber-800 border-amber-200">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                Please select a date first to see available time slots
+              </AlertDescription>
+            </Alert>
+          )}
+          
+          {selectedDate && !stylistId && (
+            <Alert variant="default" className="bg-amber-50 text-amber-800 border-amber-200">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                Please select a stylist to see their available times
+              </AlertDescription>
+            </Alert>
+          )}
+          
+          {noAvailableTimes && !loading && selectedDate && stylistId && (
+            <Alert variant="default" className="bg-rose-50 text-rose-800 border-rose-200">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                No available times for this date. Please select another date.
+              </AlertDescription>
+            </Alert>
+          )}
+          
           <Select 
-            disabled={!selectedDate || !stylistId || loading}
+            disabled={!selectedDate || !stylistId || loading || timeSlots.length === 0}
             onValueChange={field.onChange}
             value={field.value}
           >
             <FormControl>
               <SelectTrigger className="w-full">
-                <SelectValue placeholder={loading ? "Checking availability..." : "Select a time"} />
+                <SelectValue placeholder={
+                  loading ? "Checking availability..." : 
+                  !selectedDate ? "Select a date first" :
+                  !stylistId ? "Select a stylist first" :
+                  timeSlots.length === 0 ? "No available times" :
+                  "Select a time"
+                } />
               </SelectTrigger>
             </FormControl>
             <SelectContent>
@@ -148,22 +193,22 @@ const TimeSlotSelector = ({ form, selectedDate, stylistId }: TimeSlotSelectorPro
                   <SelectItem 
                     key={slot.value} 
                     value={slot.value}
-                    disabled={!slot.available}
-                    className={!slot.available ? "text-red-500 opacity-50" : ""}
+                    className="cursor-pointer"
                   >
-                    {slot.label} {!slot.available && "(Unavailable)"}
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                      {slot.label}
+                    </div>
                   </SelectItem>
                 ))
-              ) : !loading && (
+              ) : (!loading && selectedDate && stylistId) && (
                 <div className="py-2 px-2 text-center text-sm text-muted-foreground">
-                  {!selectedDate ? "Select a date first" : !stylistId ? "Select a stylist first" : "No time slots available"}
+                  No available time slots for this date
                 </div>
               )}
             </SelectContent>
           </Select>
           
-          {!selectedDate && <p className="text-xs text-muted-foreground mt-1">Select a date first</p>}
-          {selectedDate && !stylistId && <p className="text-xs text-muted-foreground mt-1">Select a stylist first</p>}
           <FormMessage />
         </FormItem>
       )}
