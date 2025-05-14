@@ -186,7 +186,8 @@ const AdminDashboard = () => {
           rating: stylist.rating || 5.0,
           reviews: stylist.reviews || 0,
           available: stylist.available !== undefined ? stylist.available : true,
-          experience: stylist.experience || 1
+          experience: stylist.experience || 1,
+          user_id: stylist.user_id // Link to user if provided
         })
         .select();
       
@@ -206,12 +207,19 @@ const AdminDashboard = () => {
           available: data[0].available,
           experience: data[0].experience,
           services: [],
-          clientReviews: []
+          clientReviews: [],
+          user_id: data[0].user_id
         };
         
         // Add the new stylist to state
         setStylists([...stylists, newStylist]);
-        toast.success("تمت إضافة المصمم بنجاح");
+        
+        // Show success message based on whether a user was associated
+        if (stylist.user_id) {
+          toast.success("تمت إضافة المصمم وتحديث دور المستخدم بنجاح");
+        } else {
+          toast.success("تمت إضافة المصمم بنجاح");
+        }
       }
     } catch (error) {
       console.error("Error adding stylist:", error);
