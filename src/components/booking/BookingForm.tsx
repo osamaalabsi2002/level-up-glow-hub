@@ -76,9 +76,16 @@ const BookingForm = ({ onClose, stylistName = "", selectedServiceId = "", user, 
   if (!user) {
     return (
       <Alert className="bg-amber-50 border border-amber-200">
-        <AlertDescription className="flex items-center justify-center">
-          <AlertCircle className="h-4 w-4 mr-2 text-amber-500" />
-          <span>Please <Button variant="link" className="p-0" onClick={() => navigate('/login')}>log in</Button> to book an appointment.</span>
+        <AlertDescription className="flex items-center justify-center gap-2">
+          <AlertCircle className="h-4 w-4 text-amber-500" />
+          <span>You need to have an account to book an appointment.</span>
+          <Button variant="link" className="p-0" onClick={() => navigate('/login')}>
+            Sign in
+          </Button>
+          <span>or</span>
+          <Button variant="link" className="p-0" onClick={() => navigate('/register')}>
+            Create an account
+          </Button>
         </AlertDescription>
       </Alert>
     );

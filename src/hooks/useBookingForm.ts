@@ -21,12 +21,7 @@ export const useBookingForm = (
   // Redirect to login if not authenticated
   useEffect(() => {
     if (!user) {
-      toast({
-        title: "Authentication required",
-        description: "You need to log in to book an appointment",
-        variant: "destructive"
-      });
-      navigate('/login');
+      console.log("User not authenticated, authentication will be required to complete booking");
     }
   }, [user, navigate]);
 
@@ -188,7 +183,7 @@ export const useBookingForm = (
         variant: "destructive"
       });
       navigate('/login');
-      return;
+      return false;
     }
     
     try {

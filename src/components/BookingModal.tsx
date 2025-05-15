@@ -21,7 +21,9 @@ const BookingModal = ({ isOpen, onClose, stylistName = "", serviceId = "" }: Boo
             {stylistName ? `Book with ${stylistName}` : "Book an Appointment"}
           </DialogTitle>
           <DialogDescription>
-            Fill out the form below to book your appointment. We'll contact you to confirm the details.
+            {user 
+              ? "Fill out the form below to book your appointment. We'll contact you to confirm the details."
+              : "Please sign in or create an account to book an appointment."}
           </DialogDescription>
         </DialogHeader>
 

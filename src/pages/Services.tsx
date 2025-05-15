@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Service } from "@/types/dashboard";
 import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { toast } from "@/components/ui/use-toast";
 
 const Services = () => {
   const { user } = useAuth();
@@ -51,7 +52,14 @@ const Services = () => {
 
   const handleBookingClick = (serviceName: string) => {
     if (!user) {
-      // Redirect to login if not authenticated
+      // Show a toast notification
+      toast({
+        title: "Authentication required",
+        description: "Please sign in or create an account to book an appointment.",
+        variant: "destructive",
+      });
+      
+      // Redirect to login
       navigate('/login');
       return;
     }

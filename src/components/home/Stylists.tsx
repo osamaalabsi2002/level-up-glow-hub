@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -8,6 +7,7 @@ import { Stylist } from "@/types/dashboard";
 import BookingModal from '@/components/BookingModal';
 import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { toast } from "@/components/ui/use-toast";
 
 const Stylists = () => {
   const { user } = useAuth();
@@ -51,7 +51,14 @@ const Stylists = () => {
 
   const handleBookClick = (stylist: Stylist) => {
     if (!user) {
-      // Redirect to login if not authenticated
+      // Show a toast notification
+      toast({
+        title: "Authentication required",
+        description: "Please sign in or create an account to book an appointment.",
+        variant: "destructive",
+      });
+      
+      // Redirect to login
       navigate('/login');
       return;
     }
