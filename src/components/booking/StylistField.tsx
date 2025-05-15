@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/select";
 import { UseFormReturn } from "react-hook-form";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/use-toast";
 
 interface Stylist {
   id: number;
@@ -27,28 +27,40 @@ interface Stylist {
 interface StylistFieldProps {
   form: UseFormReturn<any>;
   onStylistSelect?: (id: number | null) => void;
+  eligibleStylistIds?: number[];
 }
 
-const StylistField = ({ form, onStylistSelect }: StylistFieldProps) => {
+const StylistField = ({ form, onStylistSelect, eligibleStylistIds }: StylistFieldProps) => {
   const [stylists, setStylists] = useState<Stylist[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     fetchStylists();
-  }, []);
+  }, [eligibleStylistIds]);
 
   const fetchStylists = async () => {
     try {
       setLoading(true);
       console.log("Fetching stylists...");
       
-      const { data, error } = await supabase
+      let query = supabase
         .from('stylists')
         .select('id, name, available');
       
+      // If eligible stylist IDs are provided, filter by them
+      if (eligibleStylistIds && eligibleStylistIds.length > 0) {
+        query = query.in('id', eligibleStylistIds);
+      }
+      
+      const { data, error } = await query;
+      
       if (error) {
         console.error("Error fetching stylists:", error);
-        toast.error("Failed to load stylists");
+        toast({
+          title: "Error",
+          description: "Failed to load stylists",
+          variant: "destructive"
+        });
         throw error;
       }
       
@@ -57,6 +69,7 @@ const StylistField = ({ form, onStylistSelect }: StylistFieldProps) => {
         setStylists(data);
       } else {
         console.log("No stylists found");
+        setStylists([]);
       }
     } catch (error) {
       console.error('Error fetching stylists:', error);
@@ -91,12 +104,16 @@ const StylistField = ({ form, onStylistSelect }: StylistFieldProps) => {
         <FormItem>
           <FormLabel>Stylist</FormLabel>
           <Select 
-            disabled={loading} 
+            disabled={loading || stylists.length === 0} 
             onValueChange={handleStylistChange}
           >
             <FormControl>
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select a stylist" />
+                <SelectValue placeholder={
+                  stylists.length === 0 
+                    ? "No eligible stylists found" 
+                    : "Select a stylist"
+                } />
               </SelectTrigger>
             </FormControl>
             <SelectContent>

@@ -4,16 +4,19 @@ import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Star, Calendar, Instagram } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
-import BookingForm from '@/components/BookingForm';
 import { Stylist } from "@/types/dashboard";
+import BookingModal from '@/components/BookingModal';
+import { useAuth } from "@/context/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 const Stylists = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [stylists, setStylists] = useState<Stylist[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
-  const [bookingForm, setBookingForm] = useState<{isOpen: boolean, stylistId: number, stylistName: string}>({
+  const [bookingModal, setBookingModal] = useState<{isOpen: boolean, stylistName: string}>({
     isOpen: false,
-    stylistId: 0,
     stylistName: ''
   });
 
@@ -47,16 +50,21 @@ const Stylists = () => {
   }, []);
 
   const handleBookClick = (stylist: Stylist) => {
-    setBookingForm({
+    if (!user) {
+      // Redirect to login if not authenticated
+      navigate('/login');
+      return;
+    }
+    
+    setBookingModal({
       isOpen: true,
-      stylistId: stylist.id,
       stylistName: stylist.name
     });
   };
 
-  const closeBookingForm = () => {
-    setBookingForm({
-      ...bookingForm,
+  const closeBookingModal = () => {
+    setBookingModal({
+      ...bookingModal,
       isOpen: false
     });
   };
@@ -177,11 +185,10 @@ const Stylists = () => {
         </div>
       </div>
 
-      <BookingForm 
-        isOpen={bookingForm.isOpen} 
-        onClose={closeBookingForm} 
-        stylistId={bookingForm.stylistId}
-        stylistName={bookingForm.stylistName}
+      <BookingModal 
+        isOpen={bookingModal.isOpen} 
+        onClose={closeBookingModal} 
+        stylistName={bookingModal.stylistName}
       />
     </section>
   );

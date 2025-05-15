@@ -8,11 +8,16 @@ import { Scissors, Clock, Sparkles, SprayCan, Brush } from "lucide-react";
 import BookingModal from "@/components/BookingModal";
 import { supabase } from "@/integrations/supabase/client";
 import { Service } from "@/types/dashboard";
+import { useAuth } from "@/context/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 const Services = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
   const [bookingModalOpen, setBookingModalOpen] = useState(false);
+  const [selectedService, setSelectedService] = useState<string>("");
 
   // Function to get an icon based on service name
   const getServiceIcon = (name: string) => {
@@ -43,6 +48,17 @@ const Services = () => {
 
     fetchServices();
   }, []);
+
+  const handleBookingClick = (serviceName: string) => {
+    if (!user) {
+      // Redirect to login if not authenticated
+      navigate('/login');
+      return;
+    }
+    
+    setSelectedService(serviceName);
+    setBookingModalOpen(true);
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -86,7 +102,7 @@ const Services = () => {
                       <CardFooter>
                         <Button 
                           className="w-full bg-salon-green hover:bg-salon-darkGreen"
-                          onClick={() => setBookingModalOpen(true)}
+                          onClick={() => handleBookingClick(service.name)}
                         >
                           Book Now
                         </Button>
@@ -111,7 +127,7 @@ const Services = () => {
             <div className="flex justify-center gap-4 flex-wrap">
               <Button 
                 className="bg-salon-green hover:bg-salon-darkGreen"
-                onClick={() => setBookingModalOpen(true)}
+                onClick={() => handleBookingClick("")}
               >
                 <Clock className="mr-2 h-4 w-4" /> Schedule Consultation
               </Button>
@@ -125,7 +141,11 @@ const Services = () => {
       <Footer />
       
       {/* Booking Modal */}
-      <BookingModal isOpen={bookingModalOpen} onClose={() => setBookingModalOpen(false)} />
+      <BookingModal 
+        isOpen={bookingModalOpen} 
+        onClose={() => setBookingModalOpen(false)}
+        serviceId={selectedService}
+      />
     </div>
   );
 };

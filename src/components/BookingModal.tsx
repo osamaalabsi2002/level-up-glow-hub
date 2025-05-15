@@ -7,9 +7,10 @@ interface BookingModalProps {
   isOpen: boolean;
   onClose: () => void;
   stylistName?: string;
+  serviceId?: string;
 }
 
-const BookingModal = ({ isOpen, onClose, stylistName = "" }: BookingModalProps) => {
+const BookingModal = ({ isOpen, onClose, stylistName = "", serviceId = "" }: BookingModalProps) => {
   const { profile, user } = useAuth();
 
   return (
@@ -29,6 +30,7 @@ const BookingModal = ({ isOpen, onClose, stylistName = "" }: BookingModalProps) 
           stylistName={stylistName} 
           user={user} 
           profile={profile}
+          selectedServiceId={serviceId}
         />
       </DialogContent>
     </Dialog>
