@@ -375,6 +375,7 @@ export type Database = {
         Row: {
           avatar_url: string | null
           created_at: string
+          email: string | null
           full_name: string | null
           id: string
           phone: string | null
@@ -384,6 +385,7 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           created_at?: string
+          email?: string | null
           full_name?: string | null
           id: string
           phone?: string | null
@@ -393,6 +395,7 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           created_at?: string
+          email?: string | null
           full_name?: string | null
           id?: string
           phone?: string | null
@@ -654,9 +657,31 @@ export type Database = {
             }
         Returns: boolean
       }
+      create_booking: {
+        Args: {
+          p_client_id: string
+          p_client_name: string
+          p_client_email: string
+          p_client_phone: string
+          p_stylist_id: number
+          p_service_id: number
+          p_booking_date: string
+          p_booking_time: string
+          p_notes?: string
+        }
+        Returns: Json
+      }
       generate_slug: {
         Args: { title: string }
         Returns: string
+      }
+      get_stylists_for_services: {
+        Args: { service_ids: number[] }
+        Returns: {
+          id: number
+          name: string
+          service_count: number
+        }[]
       }
       is_booking_slot_available: {
         Args: {
@@ -666,6 +691,14 @@ export type Database = {
           p_duration: number
         }
         Returns: boolean
+      }
+      synchronize_stylists_and_profiles: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      update_profile: {
+        Args: { p_full_name: string; p_phone: string; p_avatar_url?: string }
+        Returns: Json
       }
     }
     Enums: {

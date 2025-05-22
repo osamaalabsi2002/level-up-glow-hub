@@ -1,7 +1,8 @@
+
 import { useState } from "react";
 import { Stylist } from "@/types/dashboard";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/use-toast";
 
 // Helper to shape DB row into our Stylist interface
 const formatStylist = (row: any): Stylist => ({
@@ -20,14 +21,74 @@ const formatStylist = (row: any): Stylist => ({
   user_id: row.user_id ?? null,
 });
 
+// Extract URL path from a Supabase storage URL
+const getStoragePathFromUrl = (url: string): string | null => {
+  try {
+    if (!url) return null;
+    
+    // Check if this is a Supabase storage URL
+    if (!url.includes('storage/v1/object/public/stylist-images/')) {
+      return null;
+    }
+    
+    // Extract the path component after 'stylist-images/'
+    const pathMatch = url.match(/stylist-images\/(.+)$/);
+    return pathMatch ? pathMatch[1] : null;
+  } catch (error) {
+    console.error("Error extracting path from URL:", error);
+    return null;
+  }
+};
+
 export const useStylistOperations = (initialStylists: Stylist[]) => {
   const [localStylists, setLocalStylists] = useState<Stylist[]>(initialStylists);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Helper to clean up unused images from storage
+  const cleanupUnusedImage = async (oldImageUrl: string, newImageUrl: string) => {
+    try {
+      // Skip cleanup if URLs are the same or old URL is external
+      if (oldImageUrl === newImageUrl || !oldImageUrl.includes('stylist-images')) {
+        return;
+      }
+      
+      const oldImagePath = getStoragePathFromUrl(oldImageUrl);
+      if (!oldImagePath) return;
+      
+      // Check if any other stylist uses this image
+      const { data: stylists } = await supabase
+        .from('stylists')
+        .select('id')
+        .neq('id', -1) // Dummy condition to get all stylists
+        .eq('image', oldImageUrl);
+      
+      if (!stylists || stylists.length <= 1) {
+        // No other stylist uses this image, safe to delete
+        const { error } = await supabase
+          .storage
+          .from('stylist-images')
+          .remove([oldImagePath]);
+          
+        if (error) {
+          console.error("Error removing old image:", error);
+        } else {
+          console.log("Old image removed successfully:", oldImagePath);
+        }
+      }
+    } catch (error) {
+      console.error("Error cleaning up image:", error);
+      // Continue execution, don't block the main operation
+    }
+  };
 
   const handleDeleteStylist = async (id: number) => {
     try {
       setIsLoading(true);
       console.log(`Deleting stylist with ID: ${id}`);
+      
+      // Get the stylist's image URL before deletion
+      const stylist = localStylists.find(s => s.id === id);
+      const imageUrl = stylist?.image;
       
       const { error } = await supabase
         .from('stylists')
@@ -39,14 +100,32 @@ export const useStylistOperations = (initialStylists: Stylist[]) => {
         throw new Error(error.message || "Failed to delete stylist");
       }
       
+      // Cleanup the image if it's from our storage
+      if (imageUrl && imageUrl.includes('stylist-images')) {
+        const imagePath = getStoragePathFromUrl(imageUrl);
+        if (imagePath) {
+          await supabase
+            .storage
+            .from('stylist-images')
+            .remove([imagePath]);
+        }
+      }
+      
       // Remove from local state
       const updatedStylists = localStylists.filter(s => s.id !== id);
       // Update the localStylists list
       setLocalStylists(updatedStylists);
-      toast.success("Stylist deleted successfully");
+      toast({
+        title: "Success",
+        description: "Stylist deleted successfully",
+      });
     } catch (error: any) {
       console.error("Error deleting stylist:", error);
-      toast.error(error.message || "Error deleting stylist");
+      toast({
+        title: "Error",
+        description: error.message || "Error deleting stylist",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -139,7 +218,11 @@ export const useStylistOperations = (initialStylists: Stylist[]) => {
 
           if (updateError) {
             // Not critical enough to rollback role change, but inform user
-            toast.warning('Stylist created but failed to update extra details');
+            toast({
+              title: "Warning",
+              description: "Stylist created but failed to update extra details",
+              variant: "destructive",
+            });
             console.error('Stylist extra detail update error:', updateError);
           } else if (updatedStylist) {
             finalStylist = formatStylist(updatedStylist);
@@ -148,7 +231,10 @@ export const useStylistOperations = (initialStylists: Stylist[]) => {
 
         // 4) Update local state & notify
         setLocalStylists([...localStylists, finalStylist]);
-        toast.success('Stylist added and user role updated successfully');
+        toast({
+          title: "Success",
+          description: "Stylist added and user role updated successfully",
+        });
         return finalStylist;
       }
 
@@ -178,11 +264,18 @@ export const useStylistOperations = (initialStylists: Stylist[]) => {
       const newStylist: Stylist = formatStylist(data![0]);
 
       setLocalStylists([...localStylists, newStylist]);
-      toast.success('Stylist added successfully');
+      toast({
+        title: "Success",
+        description: "Stylist added successfully",
+      });
       return newStylist;
     } catch (error: any) {
       console.error('Error adding stylist:', error);
-      toast.error(error.message || 'Error adding stylist');
+      toast({
+        title: "Error",
+        description: error.message || "Error adding stylist",
+        variant: "destructive",
+      });
       return null;
     } finally {
       setIsLoading(false);
@@ -193,6 +286,16 @@ export const useStylistOperations = (initialStylists: Stylist[]) => {
     try {
       setIsLoading(true);
       console.log(`Updating stylist with ID: ${updatedStylist.id}`, updatedStylist);
+      
+      // Find the original stylist to check for image changes
+      const originalStylist = localStylists.find(s => s.id === updatedStylist.id);
+      const oldImageUrl = originalStylist?.image || '';
+      const newImageUrl = updatedStylist.image || '';
+      
+      // Cleanup old image if it's changed
+      if (oldImageUrl !== newImageUrl) {
+        await cleanupUnusedImage(oldImageUrl, newImageUrl);
+      }
       
       const { error } = await supabase
         .from('stylists')
@@ -221,11 +324,18 @@ export const useStylistOperations = (initialStylists: Stylist[]) => {
         stylist.id === updatedStylist.id ? updatedStylist : stylist
       );
       setLocalStylists(updatedStylists);
-      toast.success("Stylist updated successfully");
+      toast({
+        title: "Success",
+        description: "Stylist updated successfully",
+      });
       return updatedStylist;
     } catch (error: any) {
       console.error("Error updating stylist:", error);
-      toast.error(error.message || "Error updating stylist");
+      toast({
+        title: "Error",
+        description: error.message || "Error updating stylist",
+        variant: "destructive",
+      });
       return null;
     } finally {
       setIsLoading(false);

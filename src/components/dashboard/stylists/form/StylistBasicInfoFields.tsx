@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { UseFormReturn } from "react-hook-form";
 import { StylistFormValues } from "./types";
+import { ImageUpload } from "@/components/ui/image-upload";
 
 interface StylistBasicInfoFieldsProps {
   form: UseFormReturn<StylistFormValues>;
@@ -51,9 +52,14 @@ const StylistBasicInfoFields = ({ form }: StylistBasicInfoFieldsProps) => {
         name="image"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Image URL</FormLabel>
+            <FormLabel>Image</FormLabel>
             <FormControl>
-              <Input placeholder="Image URL" {...field} />
+              <ImageUpload 
+                initialImage={field.value}
+                onImageUpload={(url) => {
+                  field.onChange(url);
+                }}
+              />
             </FormControl>
             <FormMessage />
           </FormItem>
